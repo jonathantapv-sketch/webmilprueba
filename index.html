@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checklist del Club Bíblico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Plan: hoja de ruta de trabajo en 3 pestañas (pendientes, empacar, gastos); azul tinta + rojo/azul de equipos; una columna en el teléfono */
+  --bg:#f3f4f8; --surface:#ffffff; --ink:#151a2d; --muted:#5d647c; --line:#dde0ea;
+  --accent:#2747d6; --accent-soft:#e6eafc; --red:#d33a2c; --red-soft:#fbe7e4;
+  --ok:#1f8a4c; --ok-soft:#e1f4e8; --warn:#a86a00; --warn-soft:#fdf1d8;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#181c2e; --ink:#eceef6; --muted:#a2a8c0; --line:#2b3049;
+  --accent:#7d93ff; --accent-soft:#232b55; --red:#ff7a6b; --red-soft:#3d1f1c;
+  --ok:#5fd18e; --ok-soft:#173326; --warn:#f2bb55; --warn-soft:#3a2c12; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#181c2e; --ink:#eceef6; --muted:#a2a8c0; --line:#2b3049;
+  --accent:#7d93ff; --accent-soft:#232b55; --red:#ff7a6b; --red-soft:#3d1f1c;
+  --ok:#5fd18e; --ok-soft:#173326; --warn:#f2bb55; --warn-soft:#3a2c12; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 96px;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role="button"]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:800 clamp(28px,7vw,40px)/1.05 var(--display);margin:0;text-wrap:balance}
+.event{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:15px}
+.event b{color:var(--ink);font-weight:600}
+.linkbtn{background:none;border:0;padding:2px 0;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 6px;font-weight:700;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.tab small{font-weight:600;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab[aria-selected="true"] small{color:var(--bg);opacity:.75}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sumrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.big{font:800 26px/1 var(--display);font-variant-numeric:tabular-nums}
+.big small{font:500 14px var(--body);color:var(--muted)}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+.bar.over i{background:var(--red)}
+.counts{display:flex;gap:6px;flex-wrap:wrap}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600}
+.fbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.copybtn{border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:700}
+.area{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.area-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.area-h h2{font:700 19px/1.2 var(--display);margin:0}
+.area-h p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.area-count{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;color:var(--muted);white-space:nowrap}
+ul{list-style:none;margin:0;padding:0}
+.item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:flex-start}
+.item:last-child{border-bottom:0}
+.check{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);background:transparent;display:grid;place-items:center;margin-top:1px;padding:0}
+.check svg{width:16px;height:16px;opacity:0}
+.item.done .check{background:var(--ok);border-color:var(--ok)}
+.item.done .check svg{opacity:1}
+.item.done{background:var(--ok-soft)}
+.box{border-radius:7px}
+.body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;text-align:left;cursor:pointer}
+.t{font-weight:600;font-size:16px;line-height:1.35}
+.n{color:var(--muted);font-size:14px;white-space:pre-line}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.chip.pendiente{background:var(--red-soft);color:var(--red);border-color:transparent}
+.chip.proceso{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.confirmar{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.listo{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.resp{background:transparent}
+.add{width:100%;border:0;border-top:1px dashed var(--line);background:none;padding:11px 16px;text-align:left;color:var(--accent);font-weight:700;font-size:15px}
+.empty{padding:14px 16px;color:var(--muted);font-size:14px}
+.status{font-size:13px;color:var(--muted);text-align:center}
+.money{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.gasto .money{font-size:16px;margin-left:auto;padding-left:8px}
+.cats{display:flex;flex-direction:column;gap:8px;padding:12px 16px}
+.cat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:14px}
+.cat .bar{grid-column:1/-1;height:6px}
+.cat .bar i{background:var(--accent)}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat3 div{display:flex;flex-direction:column;gap:2px}
+.stat3 span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.stat3 b{font:800 20px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.neg{color:var(--red)}
+.primarybtn{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:12px 16px;font-weight:700;font-size:16px;width:100%}
+dialog{border:0;border-radius:16px;padding:0;width:min(520px,calc(100% - 24px));background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,12,25,.5)}
+form{display:flex;flex-direction:column;gap:12px;padding:18px}
+form h3{margin:0;font:700 20px var(--display)}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+label.inline{flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--ink)}
+label.inline input{width:20px;height:20px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:4px}
+.actions div{display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:700}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.danger.armed{background:var(--red);color:#fff}
+[hidden]{display:none!important}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.sendbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--ink);color:var(--bg);font-size:15px}
+.sendbar.ok{background:var(--ok);color:#fff}
+.sendbar .btn.primary{border-color:var(--bg)}
+.sync{display:flex;flex-direction:column;gap:10px;background:var(--accent-soft);border-radius:14px;padding:12px 14px}
+.sync>div:first-child{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.sync>div:first-child b{font-size:15px}
+.sync span{color:var(--muted)}
+.syncbtns{display:flex;gap:6px;flex-wrap:wrap}
+h2.rep{font:700 19px/1.2 var(--display);margin:0}
+.formula{margin:0;color:var(--muted);font-size:14px}
+.formula b{color:var(--ink)}
+ul.sep{border-top:1px solid var(--line)}
+.uso-sabado .area-h{border-left:5px solid var(--red)}
+.uso-mes .area-h{border-left:5px solid var(--warn)}
+.uso-queda .area-h{border-left:5px solid var(--ok)}
+fieldset.usos{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+fieldset.usos legend{font-size:13px;font-weight:700;color:var(--muted);padding:0;margin-bottom:4px}
+.uso{position:relative;display:block}
+.uso input{position:absolute;opacity:0;width:1px;height:1px}
+.uso span{display:flex;flex-direction:column;gap:2px;height:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px;cursor:pointer}
+.uso span b{font-size:14px;color:var(--ink)}
+.uso span small{font-size:12px;font-weight:500;color:var(--muted);line-height:1.25}
+.uso input:checked+span{border:2px solid var(--accent);background:var(--accent-soft)}
+.uso input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}.stat3 b{font-size:17px}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.CLUB_MODE="lider";</script>
+<script type="application/json" id="state">{"evento":{"nombre":"Club bíblico · día práctico de la capacitación MIL","fecha":"","lugar":""},"areas":[{"id":"diseno","nombre":"Diseño","desc":"Lo que todavía hay que diseñar.","items":[{"id":"i1","t":"Versículo digital (para enviar) · antes del miércoles 11","n":"Hebreos 11:6, para enviar por WhatsApp y redes.","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i1b","t":"Tarjeta física del versículo · para el sábado 14","n":"Hebreos 11:6 — «Pero sin fe es imposible agradar a Dios; porque es necesario que el que se acerca a Dios crea que le hay, y que es galardonador de los que le buscan.»","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i2","t":"Invitación digital al club bíblico · para hoy, martes 10","n":"Para enviar por WhatsApp y redes. Con día, hora y lugar del club.","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i3","t":"Desafíos de la semana digital (para enviar) · para mañana, miércoles 11","n":"Para enviar por WhatsApp y redes.\n1. Asistir a la iglesia el domingo\n2. Memorizar el versículo\n3. Invitar a un amigo","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i3b","t":"Tarjeta física de desafíos de la semana · para el sábado 14","n":"1. Asistir a la iglesia el domingo\n2. Memorizar el versículo\n3. Invitar a un amigo","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i4","t":"Stickers para dividir por grupos pequeños","n":"Un color o diseño por grupo.","resp":"","estado":"pendiente","tipo":"Diseño"},{"id":"i14","t":"Tarjeta de recuerdo del tema del día","n":"Sobre el tema del club bíblico de ese sábado; tema por confirmar.","resp":"","estado":"pendiente","tipo":"Diseño"}]},{"id":"impresion","nombre":"Impresión","desc":"Diseños terminados que solo falta imprimir.","items":[{"id":"m1","t":"Imprimir tarjetas físicas del versículo · antes del sábado 14","n":"Cuando el diseño esté listo. La versión digital no se imprime.","resp":"","estado":"pendiente","tipo":"Imprimir"},{"id":"m3","t":"Imprimir tarjetas físicas de desafíos · antes del sábado 14","n":"Cuando el diseño esté listo. La versión digital no se imprime.","resp":"","estado":"pendiente","tipo":"Imprimir"},{"id":"m4","t":"Imprimir stickers de grupos pequeños","n":"Cuando el diseño esté listo.","resp":"","estado":"pendiente","tipo":"Imprimir"},{"id":"m5","t":"Imprimir tarjetas de recuerdo del tema · antes del sábado 14","n":"Cuando el diseño esté listo.","resp":"","estado":"pendiente","tipo":"Imprimir"}]},{"id":"competencia","nombre":"Juegos y competencia","desc":"Distintivos para dividir los equipos.","items":[{"id":"i5","t":"Lana roja","n":"Distintivo del equipo rojo.","resp":"","estado":"listo","tipo":"Comprar"},{"id":"i6","t":"Lana azul","n":"Distintivo del equipo azul.","resp":"","estado":"listo","tipo":"Comprar"},{"id":"i7","t":"Pañoleta roja para el capitán","n":"","resp":"","estado":"listo","tipo":"Comprar"},{"id":"i8","t":"Pañoleta azul para el capitán","n":"","resp":"","estado":"listo","tipo":"Comprar"},{"id":"i15","t":"Cortar la lana roja y azul para las manillas","n":"","resp":"Equipo de previa","estado":"pendiente","tipo":"Otro"},{"id":"s1","t":"Premio para el equipo ganador","n":"","resp":"","estado":"pendiente","tipo":"Comprar"}]},{"id":"comida","nombre":"Refrigerio y previa","desc":"Comida y juegos para el refrigerio y los 30 minutos de previa.","items":[{"id":"i9","t":"Listado de opciones para el refrigerio","n":"Ya lo está trabajando alguien del equipo; agregar aquí las opciones que envíe.","resp":"","estado":"pendiente","tipo":"Definir"},{"id":"i10","t":"Listado de opciones de bocaditos para la previa","n":"Ya lo está trabajando alguien del equipo; agregar aquí las opciones que envíe.","resp":"","estado":"pendiente","tipo":"Definir"},{"id":"i13","t":"Juegos de mesa para la previa (3 a 4)","n":"Juegos de mesa o de cartas, como el Uno.","resp":"","estado":"pendiente","tipo":"Comprar"}]},{"id":"decoracion","nombre":"Decoración","desc":"La está trabajando el resto del equipo.","items":[{"id":"i11","t":"Listado de cosas para la decoración","n":"Por confirmar con el equipo de decoración.","resp":"","estado":"confirmar","tipo":"Definir"}]},{"id":"evangelismo","nombre":"Evangelismo","desc":"Material para compartir el evangelio.","items":[{"id":"i12","t":"Conseguir folletos evangelísticos","n":"","resp":"","estado":"pendiente","tipo":"Comprar"}]}],"empacar":[{"id":"e-juegos","nombre":"Juegos y competencia","items":[{"id":"p1","t":"Lana roja","cant":"","resp":"","ok":false},{"id":"p2","t":"Lana azul","cant":"","resp":"","ok":false},{"id":"p3","t":"Pañoleta roja (capitán)","cant":"1","resp":"","ok":false},{"id":"p4","t":"Pañoleta azul (capitán)","cant":"1","resp":"","ok":false},{"id":"p5","t":"Premio para el equipo ganador","cant":"","resp":"","ok":false},{"id":"p6","t":"Juegos de mesa o de cartas","cant":"3 a 4","resp":"","ok":false}]},{"id":"e-impresos","nombre":"Impresos","items":[{"id":"p7","t":"Tarjetas del versículo (Hebreos 11:6)","cant":"","resp":"","ok":false},{"id":"p9","t":"Tarjetas de desafíos de la semana","cant":"","resp":"","ok":false},{"id":"p10","t":"Stickers de grupos pequeños","cant":"","resp":"","ok":false},{"id":"p11","t":"Tarjetas de recuerdo del tema","cant":"","resp":"","ok":false},{"id":"p12","t":"Folletos evangelísticos","cant":"","resp":"","ok":false}]},{"id":"e-utiles","nombre":"Útiles y otros","items":[{"id":"p13","t":"Biblias extra","cant":"","resp":"","ok":false},{"id":"p14","t":"Marcadores, cinta y esferos","cant":"","resp":"","ok":false}]},{"id":"e-deco","nombre":"Decoración","items":[{"id":"p15","t":"Materiales de decoración (según la lista del equipo)","cant":"","resp":"","ok":false}]}],"gastos":{"items":[{"concepto":"Lana Azul y Roja","monto":1.4,"fecha":"2026-11-10","cat":"Juegos y competencia","uso":"mes","pago":"","reemb":false,"nota":"","id":"xmwarzpniizyc"},{"concepto":"Pañuelo Rojo y Azul","monto":2,"fecha":"2026-11-10","cat":"Juegos y competencia","uso":"queda","pago":"","reemb":false,"nota":"","id":"xmwas07ynjj6x"}]},"snap":1794322695865}</script>
+<script id="app">
+(function(){
+var MODE = window.CLUB_MODE==='lider'?'lider':'owner';
+var FORM = 'https://formspree.io/f/xjywbvgb';
+var HEAD = document.head.outerHTML;
+var APP = document.getElementById('app').textContent;
+var S = JSON.parse(document.getElementById('state').textContent);
+if(!S.empacar) S.empacar=[]; if(!S.gastos) S.gastos={items:[]};
+var ESTADOS = {pendiente:'Pendiente',proceso:'En proceso',confirmar:'Por confirmar',listo:'Listo'};
+var TIPOS = ['Diseño','Imprimir','Comprar','Definir','Otro'];
+var TABS = [['pendientes','Pendientes'],['empacar','Para llevar'],['gastos','Inversión']];
+var filtro = 'todos';
+try{ filtro = localStorage.getItem('clubFiltro') || 'todos'; }catch(e){}
+var tab = 'pendientes';
+var art = null, canSave = false, saveTimer = null, statusMsg = 'Conectando…';
+var root = document.getElementById('root');
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function uid(){return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function usd(n){return '$'+(Math.round((+n||0)*100)/100).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtFecha(f,corta){if(!f)return '';var d=new Date(f+'T12:00:00');if(isNaN(d))return f;return d.toLocaleDateString('es-EC',corta?{day:'numeric',month:'short'}:{weekday:'long',day:'numeric',month:'long'});}
+function hoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function findIn(groups,id){for(var i=0;i<groups.length;i++){var g=groups[i];for(var j=0;j<g.items.length;j++){if(g.items[j].id===id)return {g:g,item:g.items[j],idx:j};}}return null;}
+function findG(id){var it=S.gastos.items;for(var i=0;i<it.length;i++){if(it[i].id===id)return {item:it[i],idx:i};}return null;}
+var CHECK='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function pendStats(){var t=0,d=0,c={pendiente:0,proceso:0,confirmar:0,listo:0};S.areas.forEach(function(a){a.items.forEach(function(i){t++;c[i.estado]=(c[i.estado]||0)+1;if(i.estado==='listo')d++;});});return {t:t,d:d,c:c};}
+function empStats(){var t=0,d=0;S.empacar.forEach(function(g){g.items.forEach(function(i){t++;if(i.ok)d++;});});return {t:t,d:d};}
+var USOS={sabado:['Se gasta','Cada sábado · un solo uso','Snacks, refrigerio, impresiones, lana para manillas.'],mes:['Se renueva','Cada mes o tema','Decoración del tema, materiales de juegos que duran el mes.'],queda:['Se queda','Una sola vez · inventario','Pañoletas, decoración general, juegos de mesa.']};
+function gasStats(){
+  var r={tot:0,porReemb:0,pers:{},u:{}};
+  Object.keys(USOS).forEach(function(k){r.u[k]={tot:0,cats:{},keys:{},items:[]};});
+  S.gastos.items.forEach(function(g){var m=+g.monto||0,u=r.u[g.uso]||r.u.sabado,c=g.cat||'Otro';r.tot+=m;u.tot+=m;u.cats[c]=(u.cats[c]||0)+m;u.items.push(g);
+    var k=g.fecha||'sin-fecha'; if(u===r.u.mes) k=k.slice(0,7); u.keys[k]=1;
+    if(g.pago&&!g.reemb){r.porReemb+=m;r.pers[g.pago]=(r.pers[g.pago]||0)+m;}});
+  r.nSab=r.u.sabado.items.length?Object.keys(r.u.sabado.keys).length:0;
+  r.nMes=r.u.mes.items.length?Object.keys(r.u.mes.keys).length:0;
+  r.porSab=r.nSab?r.u.sabado.tot/r.nSab:0; r.porMes=r.nMes?r.u.mes.tot/r.nMes:0;
+  r.mensual=r.porSab*4+r.porMes; r.arranque=r.u.queda.tot;
+  return r;
+}
+
+function readHash(){var h=(location.hash||'').slice(1);if(TABS.some(function(t){return t[0]===h;}))tab=h;}
+readHash();
+window.addEventListener('hashchange',function(){readHash();render();});
+
+function render(){
+  var ev=S.evento, ps=pendStats(), es=empStats(), gs=gasStats();
+  var h='<div class="wrap"><header><div class="kicker">Hoja de ruta del club bíblico'+(MODE==='lider'?' · Vista de líder':'')+'</div><h1>'+esc(ev.nombre||'Club bíblico')+'</h1>'+
+    '<div class="event">'+(ev.fecha?'<span><b>'+esc(fmtFecha(ev.fecha))+'</b></span>':'<span>Fecha sin definir</span>')+
+    (ev.lugar?'<span>· '+esc(ev.lugar)+'</span>':'')+
+    '<button class="linkbtn" data-act="evento">Editar datos del club</button></div></header>';
+  h+=MODE==='lider'?renderSendBar():renderSync();
+  var sub={pendientes:ps.d+'/'+ps.t+' listos',empacar:es.d+'/'+es.t+' empacados',gastos:usd(gs.mensual)+' al mes'};
+  h+='<nav class="tabs" role="tablist" aria-label="Secciones">'+TABS.map(function(t){return '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+'<small>'+sub[t[0]]+'</small></button>';}).join('')+'</nav>';
+  if(tab==='pendientes') h+=renderPend(ps);
+  else if(tab==='empacar') h+=renderEmp(es);
+  else h+=renderGas(gs);
+  h+='<p class="status" id="status">'+esc(statusMsg)+'</p></div>'+dialogs();
+  root.innerHTML=h;
+}
+
+function renderPend(ps){
+  var pct=ps.t?Math.round(ps.d*100/ps.t):0, c=ps.c;
+  var h='<section class="summary" aria-label="Avance de pendientes"><div class="sumrow"><div class="big">'+ps.d+' <small>de '+ps.t+' listos</small></div><div class="counts">'+
+    '<span class="chip pendiente">'+c.pendiente+' pendientes</span><span class="chip proceso">'+c.proceso+' en proceso</span><span class="chip confirmar">'+c.confirmar+' por confirmar</span></div></div>'+
+    '<div class="bar"><i style="width:'+pct+'%"></i></div></section>';
+  var fs=[['todos','Todo'],['pendiente','Pendientes'],['proceso','En proceso'],['confirmar','Por confirmar'],['listo','Listos']];
+  h+='<div class="toolbar"><div class="filters" role="group" aria-label="Filtrar">'+fs.map(function(f){return '<button class="fbtn" data-filtro="'+f[0]+'" aria-pressed="'+(filtro===f[0])+'">'+f[1]+'</button>';}).join('')+
+    '</div><button class="copybtn" data-act="copiar">Copiar para WhatsApp</button></div>';
+  S.areas.forEach(function(ar){
+    var dn=ar.items.filter(function(i){return i.estado==='listo';}).length;
+    var vis=ar.items.filter(function(i){return filtro==='todos'||i.estado===filtro;});
+    h+='<section class="area"><div class="area-h"><div><h2>'+esc(ar.nombre)+'</h2>'+(ar.desc?'<p>'+esc(ar.desc)+'</p>':'')+'</div><span class="area-count">'+dn+'/'+ar.items.length+'</span></div><ul>';
+    if(!vis.length) h+='<li class="empty">Nada en este filtro.</li>';
+    vis.forEach(function(it){
+      h+='<li class="item'+(it.estado==='listo'?' done':'')+'"><button class="check" data-act="toggle" data-id="'+it.id+'" aria-label="Marcar '+esc(it.t)+' como '+(it.estado==='listo'?'pendiente':'listo')+'">'+CHECK+'</button>'+
+        '<div class="body" role="button" tabindex="0" data-act="edit" data-id="'+it.id+'"><span class="t">'+esc(it.t)+'</span>'+(it.n?'<span class="n">'+esc(it.n)+'</span>':'')+
+        '<span class="chips"><span class="chip '+it.estado+'">'+ESTADOS[it.estado]+'</span>'+(it.tipo?'<span class="chip">'+esc(it.tipo)+'</span>':'')+
+        '<span class="chip resp">'+(it.resp?'👤 '+esc(it.resp):'Sin responsable')+'</span></span></div></li>';
+    });
+    h+='</ul><button class="add" data-act="nuevo" data-area="'+ar.id+'">+ Agregar a '+esc(ar.nombre)+'</button></section>';
+  });
+  return h;
+}
+
+function renderEmp(es){
+  var pct=es.t?Math.round(es.d*100/es.t):0;
+  var h='<section class="summary" aria-label="Avance de empaque"><div class="sumrow"><div class="big">'+es.d+' <small>de '+es.t+' empacados</small></div>'+
+    '<button class="copybtn" data-act="copiar">Copiar para WhatsApp</button></div><div class="bar"><i style="width:'+pct+'%"></i></div></section>';
+  S.empacar.forEach(function(g){
+    var dn=g.items.filter(function(i){return i.ok;}).length;
+    h+='<section class="area"><div class="area-h"><div><h2>'+esc(g.nombre)+'</h2></div><span class="area-count">'+dn+'/'+g.items.length+'</span></div><ul>';
+    if(!g.items.length) h+='<li class="empty">Sin materiales todavía.</li>';
+    g.items.forEach(function(it){
+      h+='<li class="item'+(it.ok?' done':'')+'"><button class="check box" data-act="etoggle" data-id="'+it.id+'" aria-label="Marcar '+esc(it.t)+' como '+(it.ok?'no empacado':'empacado')+'">'+CHECK+'</button>'+
+        '<div class="body" role="button" tabindex="0" data-act="eedit" data-id="'+it.id+'"><span class="t">'+esc(it.t)+'</span><span class="chips">'+
+        (it.cant?'<span class="chip">Cantidad: '+esc(it.cant)+'</span>':'')+
+        '<span class="chip resp">'+(it.resp?'🎒 Lo lleva '+esc(it.resp):'Nadie asignado para llevarlo')+'</span></span></div></li>';
+    });
+    h+='</ul><button class="add" data-act="enuevo" data-area="'+g.id+'">+ Agregar a '+esc(g.nombre)+'</button></section>';
+  });
+  return h;
+}
+
+function renderGas(gs){
+  var h='<section class="summary" aria-label="Reporte de inversión"><div class="sumrow"><h2 class="rep">Reporte de inversión</h2><button class="copybtn" data-act="copiar">Copiar para WhatsApp</button></div><div class="stat3">'+
+    '<div><span>Por sábado</span><b>'+usd(gs.porSab)+'</b></div>'+
+    '<div><span>Al mes</span><b>'+usd(gs.mensual)+'</b></div>'+
+    '<div><span>Para arrancar</span><b>'+usd(gs.arranque)+'</b></div></div>'+
+    '<p class="formula">Al mes = '+usd(gs.porSab)+' × 4 sábados + '+usd(gs.porMes)+' que se renueva. '+
+    (gs.nSab?'El costo por sábado es el promedio de '+gs.nSab+(gs.nSab===1?' sábado registrado':' sábados registrados')+'.':'Aún no hay gastos de un solo uso registrados.')+
+    ' Para arrancar es lo que se compra una sola vez.</p>'+
+    '<p class="formula">Invertido hasta ahora: <b class="money">'+usd(gs.tot)+'</b></p></section>';
+  h+='<button class="primarybtn" data-act="gnuevo">+ Registrar inversión</button>';
+  Object.keys(USOS).forEach(function(k){
+    var u=gs.u[k], cats=Object.keys(u.cats).sort(function(a,b){return u.cats[b]-u.cats[a];});
+    var items=u.items.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+    h+='<section class="area uso-'+k+'"><div class="area-h"><div><h2>'+USOS[k][0]+'</h2><p>'+USOS[k][1]+'. '+USOS[k][2]+'</p></div><span class="area-count money">'+usd(u.tot)+'</span></div>';
+    if(cats.length>1) h+='<div class="cats">'+cats.map(function(c){var w=u.tot?Math.round(u.cats[c]*100/u.tot):0;return '<div class="cat"><span>'+esc(c)+'</span><span class="money">'+usd(u.cats[c])+'</span><div class="bar"><i style="width:'+w+'%"></i></div></div>';}).join('')+'</div>';
+    h+='<ul'+(cats.length>1?' class="sep"':'')+'>';
+    if(!items.length) h+='<li class="empty">Nada registrado todavía.</li>';
+    items.forEach(function(g){
+      h+='<li class="item gasto"><div class="body" role="button" tabindex="0" data-act="gedit" data-id="'+g.id+'"><span class="t">'+esc(g.concepto)+'</span><span class="chips">'+
+        (g.fecha?'<span class="chip">'+esc(fmtFecha(g.fecha,true))+'</span>':'')+'<span class="chip">'+esc(g.cat||'Otro')+'</span>'+
+        (g.pago?'<span class="chip '+(g.reemb?'listo':'confirmar')+'">Pagó '+esc(g.pago)+(g.reemb?' · reembolsado':' · por reembolsar')+'</span>':'')+
+        '</span>'+(g.nota?'<span class="n">'+esc(g.nota)+'</span>':'')+'</div><span class="money">'+usd(g.monto)+'</span></li>';
+    });
+    h+='</ul></section>';
+  });
+  var pers=Object.keys(gs.pers);
+  if(pers.length){
+    h+='<section class="area"><div class="area-h"><div><h2>Por reembolsar</h2><p>Lo que cada persona pagó de su bolsillo.</p></div><span class="area-count money">'+usd(gs.porReemb)+'</span></div><ul>'+
+      pers.map(function(n){return '<li class="item"><span class="t">'+esc(n)+'</span><span class="money" style="margin-left:auto">'+usd(gs.pers[n])+'</span></li>';}).join('')+'</ul></section>';
+  }
+  return h;
+}
+
+function dialogs(){
+  var areaOpts=S.areas.map(function(a){return '<option value="'+a.id+'">'+esc(a.nombre)+'</option>';}).join('');
+  var grpOpts=S.empacar.map(function(a){return '<option value="'+a.id+'">'+esc(a.nombre)+'</option>';}).join('');
+  var catNames=S.areas.map(function(a){return a.nombre;}); if(catNames.indexOf('Otro')<0) catNames.push('Otro');
+  var catOpts=catNames.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
+  var est=Object.keys(ESTADOS).map(function(k){return '<option value="'+k+'">'+ESTADOS[k]+'</option>';}).join('');
+  var tip=TIPOS.map(function(t){return '<option>'+t+'</option>';}).join('');
+  var del='<button type="button" class="btn danger" data-del>Eliminar</button>';
+  var cancel='<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">Guardar</button>';
+  return '<dialog id="dlgItem"><form id="fItem"><h3 class="dt">Editar</h3>'+
+    '<label for="fT">Qué se necesita<input id="fT" required maxlength="140"></label>'+
+    '<label for="fN">Detalles<textarea id="fN" maxlength="600"></textarea></label>'+
+    '<div class="row2"><label for="fE">Estado<select id="fE">'+est+'</select></label><label for="fTipo">Tipo<select id="fTipo">'+tip+'</select></label></div>'+
+    '<div class="row2"><label for="fR">Responsable<input id="fR" maxlength="60" placeholder="Nombre"></label><label for="fA">Área<select id="fA">'+areaOpts+'</select></label></div>'+
+    '<div class="actions">'+del+'<div>'+cancel+'</div></div></form></dialog>'+
+    '<dialog id="dlgEmp"><form id="fEmp"><h3 class="dt">Editar</h3>'+
+    '<label for="pT">Material<input id="pT" required maxlength="140"></label>'+
+    '<div class="row2"><label for="pC">Cantidad<input id="pC" maxlength="30" placeholder="Ej.: 20"></label><label for="pR">Quién lo lleva<input id="pR" maxlength="60" placeholder="Nombre"></label></div>'+
+    '<label for="pG">Grupo<select id="pG">'+grpOpts+'</select></label>'+
+    '<div class="actions">'+del+'<div>'+cancel+'</div></div></form></dialog>'+
+    '<dialog id="dlgGas"><form id="fGas"><h3 class="dt">Registrar inversión</h3>'+
+    '<label for="gC">Concepto<input id="gC" required maxlength="120" placeholder="Ej.: Snacks para la previa"></label>'+
+    '<fieldset class="usos"><legend>¿Cómo se usa?</legend>'+Object.keys(USOS).map(function(k){return '<label class="uso"><input type="radio" name="gU" value="'+k+'"'+(k==='sabado'?' required':'')+'><span><b>'+USOS[k][0]+'</b><small>'+USOS[k][1]+'</small></span></label>';}).join('')+'</fieldset>'+
+    '<div class="row2"><label for="gM">Monto (USD)<input id="gM" type="number" inputmode="decimal" step="0.01" min="0" required placeholder="0.00"></label><label for="gF">Fecha<input id="gF" type="date"></label></div>'+
+    '<div class="row2"><label for="gA">Área<select id="gA" required><option value="">Elige un área</option>'+catOpts+'</select></label><label for="gP">Quién pagó<input id="gP" maxlength="60" placeholder="Vacío = fondo del club"></label></div>'+
+    '<label class="inline" for="gR"><input id="gR" type="checkbox"> Ya se le reembolsó</label>'+
+    '<label for="gN">Nota<input id="gN" maxlength="200" placeholder="Tienda, factura, etc."></label>'+
+    '<div class="actions">'+del+'<div>'+cancel+'</div></div></form></dialog>'+
+    '<dialog id="dlgNom"><form id="fNom"><h3>¿Quién envía los cambios?</h3>'+
+    '<label for="nN">Tu nombre<input id="nN" required maxlength="40" placeholder="Ej.: Ana"></label>'+
+    '<div class="actions"><span></span><div><button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">Enviar</button></div></div></form></dialog>'+
+    '<dialog id="dlgCod"><form id="fCod"><h3>Pegar código de cambios</h3>'+
+    '<label for="cT">Pega aquí el correo o el código completo<textarea id="cT" required></textarea></label>'+
+    '<div class="actions"><span></span><div><button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">Importar</button></div></div></form></dialog>'+
+    '<dialog id="dlgEv"><form id="fEv"><h3>Datos del club</h3>'+
+    '<label for="eN">Nombre<input id="eN" maxlength="100"></label>'+
+    '<div class="row2"><label for="eF">Fecha<input id="eF" type="date"></label><label for="eL">Lugar<input id="eL" maxlength="80"></label></div>'+
+    '<div class="actions"><span></span><div>'+cancel+'</div></div></form></dialog>';
+}
+
+var editing=null, delArmed=false;
+function prep(dlg,isEdit,title){
+  var d=$(dlg); d.querySelector('.dt')&&(d.querySelector('.dt').textContent=title);
+  var b=d.querySelector('[data-del]'); if(b){delArmed=false;b.classList.remove('armed');b.textContent='Eliminar';b.style.visibility=isEdit?'visible':'hidden';}
+  d.showModal();
+}
+function openItem(id,areaId){
+  if(id){var f=findIn(S.areas,id);editing=id;$('fT').value=f.item.t;$('fN').value=f.item.n||'';$('fE').value=f.item.estado;$('fTipo').value=TIPOS.indexOf(f.item.tipo)>=0?f.item.tipo:'Otro';$('fR').value=f.item.resp||'';$('fA').value=f.g.id;}
+  else{editing=null;$('fT').value='';$('fN').value='';$('fR').value='';$('fE').value='pendiente';$('fTipo').value='Comprar';$('fA').value=areaId;}
+  prep('dlgItem',!!id,id?'Editar pendiente':'Agregar pendiente'); $('fT').focus();
+}
+function openEmp(id,gid){
+  if(id){var f=findIn(S.empacar,id);editing=id;$('pT').value=f.item.t;$('pC').value=f.item.cant||'';$('pR').value=f.item.resp||'';$('pG').value=f.g.id;}
+  else{editing=null;$('pT').value='';$('pC').value='';$('pR').value='';$('pG').value=gid;}
+  prep('dlgEmp',!!id,id?'Editar material':'Agregar material'); $('pT').focus();
+}
+function setUso(v){var r=document.querySelectorAll('input[name="gU"]');for(var i=0;i<r.length;i++)r[i].checked=(r[i].value===v);}
+function getUso(){var r=document.querySelector('input[name="gU"]:checked');return r?r.value:'';}
+function openGas(id){
+  if(id){var f=findG(id).item;editing=id;$('gC').value=f.concepto;setUso(f.uso||'sabado');$('gM').value=f.monto;$('gF').value=f.fecha||'';$('gA').value=f.cat||'Otro';$('gP').value=f.pago||'';$('gR').checked=!!f.reemb;$('gN').value=f.nota||'';}
+  else{editing=null;$('gC').value='';setUso('');$('gM').value='';$('gF').value=hoy();$('gA').value='';$('gP').value='';$('gR').checked=false;$('gN').value='';}
+  prep('dlgGas',!!id,id?'Editar inversión':'Registrar inversión'); $('gC').focus();
+}
+
+root.addEventListener('click',function(e){
+  var t=e.target;
+  if(t.closest('[data-cancel]')){t.closest('dialog').close();return;}
+  var db=t.closest('[data-del]');
+  if(db){
+    if(!delArmed){delArmed=true;db.classList.add('armed');db.textContent='Toca otra vez para eliminar';return;}
+    var dlg=db.closest('dialog').id, f, col='', prev='';
+    if(dlg==='dlgItem'){col='areas';f=findIn(S.areas,editing);if(f){prev=f.item.t;f.g.items.splice(f.idx,1);}}
+    else if(dlg==='dlgEmp'){col='empacar';f=findIn(S.empacar,editing);if(f){prev=f.item.t;f.g.items.splice(f.idx,1);}}
+    else if(dlg==='dlgGas'){col='gastos';f=findG(editing);if(f){prev=f.item.concepto;S.gastos.items.splice(f.idx,1);}}
+    db.closest('dialog').close(); changed(col,editing,prev); return;
+  }
+  var b=t.closest('[data-act],[data-filtro],[data-tab]'); if(!b) return;
+  if(b.dataset.tab){tab=b.dataset.tab;try{history.replaceState(null,'','#'+tab);}catch(x){location.hash=tab;}render();return;}
+  if(b.dataset.filtro){filtro=b.dataset.filtro;try{localStorage.setItem('clubFiltro',filtro);}catch(x){}render();return;}
+  var a=b.dataset.act,id=b.dataset.id,f2;
+  if(a==='toggle'){f2=findIn(S.areas,id);f2.item.estado=f2.item.estado==='listo'?'pendiente':'listo';changed('areas',id);}
+  else if(a==='edit') openItem(id);
+  else if(a==='nuevo') openItem(null,b.dataset.area);
+  else if(a==='etoggle'){f2=findIn(S.empacar,id);f2.item.ok=!f2.item.ok;changed('empacar',id);}
+  else if(a==='eedit') openEmp(id);
+  else if(a==='enuevo') openEmp(null,b.dataset.area);
+  else if(a==='gnuevo') openGas(null);
+  else if(a==='gedit') openGas(id);
+  else if(a==='evento'){$('eN').value=S.evento.nombre||'';$('eF').value=S.evento.fecha||'';$('eL').value=S.evento.lugar||'';$('dlgEv').showModal();}
+  else if(a==='copiar') copiar(b);
+  else if(a==='enviar') enviar();
+  else if(a==='importar') importar(true);
+  else if(a==='pegar'){$('cT').value='';$('dlgCod').showModal();$('cT').focus();}
+  else if(a==='version') versionLideres(b);
+});
+root.addEventListener('keydown',function(e){
+  var b=e.target.closest('.body[data-act]'); if(b&&(e.key==='Enter'||e.key===' ')){e.preventDefault();b.click();}
+});
+root.addEventListener('submit',function(e){
+  e.preventDefault(); var id=e.target.id, f, col='', tid='';
+  if(id==='fItem'){
+    var t=$('fT').value.trim(); if(!t) return;
+    var data={t:t,n:$('fN').value.trim(),estado:$('fE').value,tipo:$('fTipo').value,resp:$('fR').value.trim()};
+    var target=S.areas.filter(function(a){return a.id===$('fA').value;})[0];
+    if(editing){f=findIn(S.areas,editing);Object.assign(f.item,data);if(f.g!==target){f.g.items.splice(f.idx,1);target.items.push(f.item);}}
+    else{data.id=uid();target.items.push(data);}
+    col='areas';tid=editing||data.id;
+  } else if(id==='fEmp'){
+    var pt=$('pT').value.trim(); if(!pt) return;
+    var pd={t:pt,cant:$('pC').value.trim(),resp:$('pR').value.trim()};
+    var tg=S.empacar.filter(function(a){return a.id===$('pG').value;})[0];
+    if(editing){f=findIn(S.empacar,editing);Object.assign(f.item,pd);if(f.g!==tg){f.g.items.splice(f.idx,1);tg.items.push(f.item);}}
+    else{pd.id=uid();pd.ok=false;tg.items.push(pd);}
+    col='empacar';tid=editing||pd.id;
+  } else if(id==='fGas'){
+    var c=$('gC').value.trim(), m=parseFloat(String($('gM').value).replace(',','.')); if(!c||isNaN(m)) return;
+    var u=getUso(); if(!u||!$('gA').value) return;
+    var gd={concepto:c,uso:u,monto:Math.round(m*100)/100,fecha:$('gF').value,cat:$('gA').value,pago:$('gP').value.trim(),reemb:$('gR').checked,nota:$('gN').value.trim()};
+    if(editing){Object.assign(findG(editing).item,gd);}else{gd.id=uid();S.gastos.items.push(gd);}
+    col='gastos';tid=editing||gd.id;
+  } else if(id==='fEv'){
+    S.evento={nombre:$('eN').value.trim(),fecha:$('eF').value,lugar:$('eL').value.trim()};col='evento';
+  } else if(id==='fNom'){
+    var nm=$('nN').value.trim(); if(!nm) return; NOMBRE=nm; try{localStorage.setItem('club-lider-nombre',nm);}catch(x){}
+    e.target.closest('dialog').close(); enviar(); return;
+  } else if(id==='fCod'){
+    var res=aplicarTexto($('cT').value);
+    S.ultimaImportacion={msg:res.n?'Se importaron '+res.n+' cambio(s) de '+res.quienes.join(', ')+' (código pegado).':'No se encontró ningún código válido en el texto pegado.',at:Date.now()};
+    e.target.closest('dialog').close(); if(res.n) changed(); else render(); return;
+  } else return;
+  e.target.closest('dialog').close(); changed(col,tid);
+});
+
+function cabecera(){var ev=S.evento,out=['*'+(ev.nombre||'Club bíblico')+'*'];if(ev.fecha||ev.lugar)out.push([fmtFecha(ev.fecha),ev.lugar].filter(Boolean).join(' · '));return out;}
+function texto(){
+  var out=cabecera();
+  if(tab==='pendientes'){
+    out.push('_Pendientes_');
+    S.areas.forEach(function(ar){if(!ar.items.length)return;out.push('');out.push('*'+ar.nombre+'*');
+      ar.items.forEach(function(i){out.push((i.estado==='listo'?'✅ ':'⬜ ')+i.t+(i.estado==='confirmar'?' (por confirmar)':'')+(i.resp?' — '+i.resp:''));});});
+  } else if(tab==='empacar'){
+    out.push('_Para empacar y llevar_');
+    S.empacar.forEach(function(g){if(!g.items.length)return;out.push('');out.push('*'+g.nombre+'*');
+      g.items.forEach(function(i){out.push((i.ok?'✅ ':'⬜ ')+i.t+(i.cant?' ('+i.cant+')':'')+(i.resp?' — lleva '+i.resp:''));});});
+  } else {
+    var gs=gasStats();
+    out.push('_Reporte de inversión_');
+    out.push('Por sábado: '+usd(gs.porSab));
+    out.push('Al mes (4 sábados + lo que se renueva): '+usd(gs.mensual));
+    out.push('Para arrancar (una sola vez): '+usd(gs.arranque));
+    Object.keys(USOS).forEach(function(k){var u=gs.u[k];if(!u.items.length)return;out.push('');out.push('*'+USOS[k][0]+' · '+USOS[k][1]+'* — '+usd(u.tot));
+      u.items.forEach(function(g){out.push('• '+g.concepto+': '+usd(g.monto)+(g.pago?' (pagó '+g.pago+(g.reemb?', reembolsado':', por reembolsar')+')':''));});});
+    var ps=Object.keys(gs.pers); if(ps.length){out.push('');out.push('*Por reembolsar*');ps.forEach(function(n){out.push('• '+n+': '+usd(gs.pers[n]));});}
+  }
+  return out.join('\n');
+}
+function copiar(b){
+  var txt=texto(), lbl=b.textContent;
+  function ok(){b.textContent='¡Copiado!';setTimeout(function(){b.textContent=lbl;},1800);}
+  function fallback(){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(x){b.textContent='No se pudo copiar';}ta.remove();}
+  try{navigator.clipboard.writeText(txt).then(ok,fallback);}catch(e){fallback();}
+}
+
+function setStatus(m){statusMsg=m;var el=$('status');if(el)el.textContent=m;}
+function clone(o){return o==null?null:JSON.parse(JSON.stringify(o));}
+function snapOp(col,id,prev){
+  if(col==='evento') return {k:'evento',data:clone(S.evento)};
+  if(col==='gastos'){var f=findG(id);return {k:'gasto',id:id,data:f?clone(f.item):null,t:prev||''};}
+  var f2=findIn(S[col],id); return {k:'item',col:col,id:id,g:f2?f2.g.id:null,data:f2?clone(f2.item):null,t:prev||''};
+}
+function applyOp(st,op){
+  if(!op||!op.k) return;
+  if(op.k==='evento'){if(op.data)st.evento=op.data;return;}
+  if(op.k==='gasto'){var arr=st.gastos.items,i=-1;for(var x=0;x<arr.length;x++)if(arr[x].id===op.id)i=x;
+    if(!op.data){if(i>=0)arr.splice(i,1);}else if(i>=0)arr[i]=op.data;else arr.push(op.data);return;}
+  if(op.k==='item'){var groups=st[op.col]; if(!groups||!groups.length) return; var f=findIn(groups,op.id);
+    if(!op.data){if(f)f.g.items.splice(f.idx,1);return;}
+    var tg=groups.filter(function(g){return g.id===op.g;})[0]||(f&&f.g)||groups[0];
+    if(f){if(f.g!==tg){f.g.items.splice(f.idx,1);tg.items.push(op.data);}else f.g.items[f.idx]=op.data;}else tg.items.push(op.data);}
+}
+function describe(op){
+  var d=op.data;
+  if(op.k==='evento') return '📅 Cambió los datos del club';
+  if(op.k==='gasto') return d?'💵 Inversión: '+d.concepto+' · '+usd(d.monto):'🗑 Eliminó la inversión: '+(op.t||'');
+  if(op.col==='empacar') return d?(d.ok?'🎒 Empacado: ':'✏️ Material: ')+d.t:'🗑 Eliminó el material: '+(op.t||'');
+  return d?(d.estado==='listo'?'✅ Listo: ':'✏️ '+(ESTADOS[d.estado]||'Actualizó')+': ')+d.t:'🗑 Eliminó el pendiente: '+(op.t||'');
+}
+function b64e(str){return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64d(c){c=c.replace(/[^A-Za-z0-9\-_]/g,'').replace(/-/g,'+').replace(/_/g,'/');while(c.length%4)c+='=';return decodeURIComponent(escape(atob(c)));}
+function parseCodes(text){
+  var out=[],re=/CLUBCODE\{([\s\S]*?)\}CLUBCODE/g,m;
+  while((m=re.exec(text||''))){try{var p=JSON.parse(b64d(m[1]));if(p&&p.ops&&p.ops.length)out.push(p);}catch(e){}}
+  return out;
+}
+function aplicarTexto(text){var n=0,q={};parseCodes(text).forEach(function(p){p.ops.forEach(function(o){applyOp(S,o);});n+=p.ops.length;q[p.nombre||'un líder']=1;});return {n:n,quienes:Object.keys(q)};}
+
+/* ---------- Modo líder: guarda en el teléfono y envía por correo ---------- */
+var NOMBRE='', OPS=[], sending=false, sendMsg='', LKEY='club-ops-'+(S.snap||0);
+if(MODE==='lider'){
+  try{
+    NOMBRE=localStorage.getItem('club-lider-nombre')||'';
+    OPS=JSON.parse(localStorage.getItem(LKEY)||'[]');
+    for(var k=localStorage.length-1;k>=0;k--){var key=localStorage.key(k);
+      if(key&&key.indexOf('club-ops-')===0&&key!==LKEY){
+        try{JSON.parse(localStorage.getItem(key)||'[]').forEach(function(o){if(!o.sent)OPS.push(o);});}catch(e){}
+        localStorage.removeItem(key);}}
+  }catch(e){OPS=[];}
+  OPS.forEach(function(o){applyOp(S,o.op);});
+  statusMsg='Tus cambios se guardan en este teléfono hasta que los envíes.';
+}
+function saveOps(){try{localStorage.setItem(LKEY,JSON.stringify(OPS));}catch(e){}}
+function pendientes(){return OPS.filter(function(o){return !o.sent;});}
+function renderSendBar(){
+  var n=pendientes().length;
+  if(sending) return '<div class="sendbar"><span>Enviando…</span></div>';
+  if(n) return '<div class="sendbar"><span><b>'+n+'</b> '+(n===1?'cambio sin enviar':'cambios sin enviar')+'</span><button class="btn primary" data-act="enviar">Enviar cambios</button></div>';
+  return sendMsg?'<div class="sendbar ok"><span>'+esc(sendMsg)+'</span></div>':'';
+}
+function enviar(){
+  var pend=pendientes(); if(!pend.length||sending) return;
+  if(!NOMBRE){$('nN').value='';$('dlgNom').showModal();$('nN').focus();return;}
+  var payload={v:1,nombre:NOMBRE,snap:S.snap||0,ops:pend.map(function(o){return o.op;})};
+  var subj='Cambios del club · '+NOMBRE+' · '+new Date().toLocaleString('es-EC',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  sending=true; render();
+  fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subj,nombre:NOMBRE,cambios:pend.map(function(o){return describe(o.op);}).join('\n'),codigo:'CLUBCODE{'+b64e(JSON.stringify(payload))+'}CLUBCODE'})})
+  .then(function(r){if(!r.ok) throw new Error('http '+r.status); pend.forEach(function(o){o.sent=true;}); saveOps(); sendMsg='✓ Cambios enviados. ¡Gracias, '+NOMBRE+'!';})
+  .catch(function(){sendMsg='No se pudo enviar. Revisa tu internet e inténtalo otra vez.';})
+  .then(function(){sending=false;render();});
+}
+
+/* ---------- Modo coordinador: importa del correo ---------- */
+var mcp=null, importing=false;
+function renderSync(){
+  var u=S.ultimaImportacion;
+  return '<section class="sync" aria-label="Cambios de los líderes"><div><b>Cambios de los líderes</b><span>'+
+    esc(importing?'Revisando tu correo…':(u?u.msg+' · '+new Date(u.at).toLocaleString('es-EC',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Se revisa tu correo cada vez que abres esta página.'))+'</span></div>'+
+    '<div class="syncbtns"><button class="fbtn" data-act="importar"'+(importing?' disabled':'')+'>Revisar correo</button><button class="fbtn" data-act="pegar">Pegar código</button><button class="fbtn" data-act="version">Versión para líderes</button></div></section>';
+}
+function errMsg(e){
+  var c=(e&&e.code)||'';
+  if(c==='needs_reauth') return 'Gmail necesita reconectarse en claude.ai (Configuración → Conectores).';
+  if(c==='server_not_connected'||c==='selection_required') return 'Conecta Gmail en claude.ai (Configuración → Conectores) para importar solo.';
+  if(c==='approval_required'||c==='not_in_manifest'||c==='consent_required') return 'Falta tu permiso para leer el correo. Toca «Revisar correo» y acepta.';
+  if(c==='blocked_by_policy') return 'Tu organización no permite usar Gmail aquí. Usa «Pegar código».';
+  return 'No se pudo revisar el correo'+(c?' ('+c+')':'')+'. Inténtalo otra vez o usa «Pegar código».';
+}
+function importar(manual){
+  if(!mcp){S.ultimaImportacion={msg:'Esta vista no puede leer tu correo. Usa «Pegar código».',at:Date.now()};render();return;}
+  if(importing) return; importing=true; render();
+  try{sessionStorage.setItem('club-last-check',String(Date.now()));}catch(x){}
+  var done=S.importados||(S.importados=[]), seen={}; done.forEach(function(id){seen[id]=1;});
+  mcp.callTool('Gmail','search_threads',{query:'subject:"Cambios del club" newer_than:90d',pageSize:50},{cache:false})
+  .then(function(r){
+    var th=(r.payload&&r.payload.threads)||[];
+    var need=th.filter(function(t){var ms=t.messages||[];return ms.some(function(m){return !seen[m.id];})||(t.messageCount||0)>ms.length;});
+    return Promise.all(need.map(function(t){return mcp.callTool('Gmail','get_thread',{threadId:t.id,messageFormat:'PLAIN_TEXT'},{cache:false})
+      .then(function(x){var p=x.payload||{};return p.messages||(p.thread&&p.thread.messages)||[];});}));
+  }).then(function(lists){
+    var msgs=[].concat.apply([],lists).filter(function(m){return m&&m.id&&!seen[m.id];});
+    msgs.sort(function(a,b){return (+a.internalDate||Date.parse(a.date)||0)-(+b.internalDate||Date.parse(b.date)||0);});
+    var n=0,q={};
+    msgs.forEach(function(m){var r=aplicarTexto((m.plaintextBody||'')+'\n'+(m.snippet||''));n+=r.n;r.quienes.forEach(function(x){q[x]=1;});done.push(m.id);seen[m.id]=1;});
+    if(done.length>500) S.importados=done.slice(-500);
+    importing=false;
+    if(n){S.ultimaImportacion={msg:'Se importaron '+n+' cambio(s) de '+Object.keys(q).join(', ')+'.',at:Date.now()};changed();}
+    else{if(manual||!S.ultimaImportacion) S.ultimaImportacion={msg:'No hay cambios nuevos de los líderes.',at:Date.now()}; if(msgs.length) changed(); else render();}
+  }).catch(function(e){importing=false;S.ultimaImportacion={msg:errMsg(e),at:Date.now()};render();});
+}
+function versionLideres(b){
+  var st=clone(S); st.snap=Date.now(); delete st.importados; delete st.ultimaImportacion;
+  var html=buildDoc('lider',st), lbl=b.textContent;
+  var useD=window.claude&&window.claude.use?window.claude.use('downloads'):Promise.resolve(null);
+  useD.then(function(d){
+    if(!d){b.textContent='Descarga no disponible aquí';setTimeout(function(){b.textContent=lbl;},2500);return;}
+    return d.save({filename:'index.html',data:new Blob([html],{type:'text/html'})}).then(function(){b.textContent='¡Listo! Súbelo a Netlify';setTimeout(function(){b.textContent=lbl;},3000);});
+  }).catch(function(){b.textContent='No se descargó';setTimeout(function(){b.textContent=lbl;},2500);});
+}
+
+function changed(col,id,prev){
+  if(MODE==='lider'){
+    if(col){OPS.push({op:snapOp(col,id,prev),sent:false,at:Date.now()});saveOps();sendMsg='';}
+    render(); return;
+  }
+  render();
+  if(!canSave){setStatus(art===null?'Vista sin guardado: los cambios se pierden al cerrar.':'Solo lectura: tus cambios no se guardan.');return;}
+  setStatus('Guardando…');clearTimeout(saveTimer);saveTimer=setTimeout(save,1200);
+}
+function buildDoc(mode,st){
+  var json=JSON.stringify(st||S).replace(/</g,'\\u003c');
+  return '<!DOCTYPE html>\n<html lang="es">\n'+HEAD+'\n<body>\n<div id="root"></div>\n'+(mode==='lider'?'<script>window.CLUB_MODE="lider";<\/script>\n':'')+'<script type="application/json" id="state">'+json+'<\/script>\n<script id="app">'+APP+'<\/script>\n</body>\n</html>\n';
+}
+function save(){
+  art.publish(buildDoc('owner')).then(function(){setStatus('Guardado para todo el equipo.');},function(err){
+    var m=(err&&(err.code||err.message))||'';
+    if(/not_granted|not_writer/.test(m)){canSave=false;setStatus('Solo lectura: tus cambios no se guardan.');}
+    else if(/conflict/.test(m)){setStatus('Alguien guardó al mismo tiempo; se cargó su versión.');}
+    else setStatus('No se pudo guardar. Revisa tu conexión e inténtalo otra vez.');
+  });
+}
+
+render();
+if(MODE!=='lider'){
+  var waitClaude=new Promise(function(res){var n=0;(function w(){if(window.claude&&window.claude.use){res(true);}else if(n++<50){setTimeout(w,200);}else res(false);})();});
+  waitClaude.then(function(ok){
+    if(!ok){setStatus('Vista sin guardado: los cambios se pierden al cerrar.');return;}
+    window.claude.use('artifact').then(function(a){art=a;canSave=!!a;setStatus(a?'Los cambios se guardan para todo el equipo.':'Vista sin guardado: los cambios se pierden al cerrar.');},function(){setStatus('Vista sin guardado: los cambios se pierden al cerrar.');});
+    window.claude.use('mcp').then(function(m){
+      mcp=m; if(!m) return;
+      var last=0; try{last=+sessionStorage.getItem('club-last-check')||0;}catch(x){}
+      if(Date.now()-last>5*60*1000) importar(false);
+    },function(){});
+  });
+}
+})();
+</script>
+</body>
+</html>
