@@ -77,6 +77,14 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
 .tag.hibrido{background:var(--mix-soft);color:var(--mix)}
 .tag.pend{background:var(--red-soft);color:var(--red)}
 .tag.okk{background:var(--accent-soft);color:var(--accent)}
+.tag.anul{background:var(--line);color:var(--muted)}
+li.anulada .l>span:first-child,li.anulada .r .m{text-decoration:line-through;color:var(--muted)}
+li{flex-wrap:wrap}
+.delb{align-self:flex-start;background:none;border:0;padding:0;margin-top:4px;color:var(--red);font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:2px}
+.conf{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--red-soft);color:var(--red);border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px}
+.conf div{display:flex;gap:6px}
+.conf button{border-radius:99px;padding:5px 12px;font-weight:700;font-size:14px;border:1px solid var(--red);background:var(--surface);color:var(--red)}
+.conf button.si{background:var(--red);color:#fff}
 .empty{color:var(--muted);font-size:15px;margin:0}
 .prods{display:flex;flex-direction:column;gap:10px}
 .prod{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
@@ -215,12 +223,34 @@ $('foto').onchange=function(){var f=this.files&&this.files[0];if(!f)return;$('fo
 Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
 
 function render(){
-  var pend=hist.filter(function(h){return !h.sent;}).length;
+  var pend=hist.filter(function(h){return h.anulPend||!h.sent;}).length;
   $('retry').hidden=!pend;
   if(!hist.length){$('mis').innerHTML='<li><p class="empty">Todavía no has registrado ventas desde este teléfono.</p></li>';return;}
-  $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v;
-    return '<li><span class="l"><span>'+esc(resumen(v))+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
-      '<span class="r">'+(v.foto?'📎 ':'')+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
+  $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v,est,cls;
+    if(h.anulada){est='Eliminada';cls='anul';}else if(h.anulPend){est='Eliminación sin enviar';cls='pend';}else if(h.sent){est='Enviado';cls='okk';}else{est='Sin enviar';cls='pend';}
+    var gone=h.anulada||h.anulPend;
+    return '<li class="'+(gone?'anulada':'')+'"><span class="l"><span>'+esc(resumen(v))+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small>'+
+      (gone?'':'<button type="button" class="delb" data-del="'+v.id+'">Eliminar</button>')+'</span>'+
+      '<span class="r"><span class="m">'+(v.foto?'📎 ':'')+usd(v.total)+'</span><br><span class="tag '+cls+'">'+est+'</span></span>'+
+      (confId===v.id?'<div class="conf" role="alert"><span>¿Eliminar esta venta de '+usd(v.total)+'?</span><div><button type="button" data-no>No</button><button type="button" class="si" data-si="'+v.id+'">Sí, eliminar</button></div></div>':'')+'</li>';}).join('');
+  Array.prototype.forEach.call($('mis').querySelectorAll('[data-del]'),function(b){b.onclick=function(){confId=b.getAttribute('data-del');render();};});
+  Array.prototype.forEach.call($('mis').querySelectorAll('[data-no]'),function(b){b.onclick=function(){confId='';render();};});
+  Array.prototype.forEach.call($('mis').querySelectorAll('[data-si]'),function(b){b.onclick=function(){eliminar(b.getAttribute('data-si'));};});
+}
+var confId='';
+function anular(h){var v=h.v;
+  return fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:'Venta devocionales · ANULADA · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,venta_anulada:resumen(v)+' por '+usd(v.total)+' del '+v.fecha,codigo:'BORRACODE{'+v.id+'}BORRACODE'})})
+  .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.anulada=true; delete h.anulPend; save();});
+}
+function eliminar(id){confId='';
+  var i=-1;hist.forEach(function(h,k){if(h.v.id===id)i=k;}); if(i<0) return render();
+  var h=hist[i];
+  if(!h.sent){hist.splice(i,1);save();setMsg('Se eliminó la venta (no se había enviado).',true);return render();}
+  h.anulPend=true; save(); render();
+  anular(h).then(function(){setMsg('✓ Venta eliminada. Ya se avisó para quitarla del control.',true);},
+    function(){setMsg('No se pudo avisar (¿sin internet?). Toca «Reenviar pendientes» cuando tengas señal.',false);})
+  .then(render);
 }
 function enviar(h){
   var v=h.v;
@@ -254,9 +284,9 @@ $('f').onsubmit=function(e){
   }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();recalc();render();});
 };
 $('retry').onclick=function(){
-  var p=hist.filter(function(h){return !h.sent;}); if(!p.length) return;
+  var p=hist.filter(function(h){return h.anulPend||!h.sent;}); if(!p.length) return;
   $('retry').disabled=true;
-  p.reduce(function(acc,h){return acc.then(function(){return enviar(h);});},Promise.resolve())
+  p.reduce(function(acc,h){return acc.then(function(){return h.anulPend?anular(h):enviar(h);});},Promise.resolve())
   .then(function(){setMsg('✓ Se enviaron todos los registros pendientes.',true);},function(){setMsg('Algunos no se pudieron enviar. Inténtalo otra vez cuando tengas internet.',false);})
   .then(function(){$('retry').disabled=false;render();});
 };
