@@ -91,6 +91,8 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
 .totbox b{font:800 28px var(--display);font-variant-numeric:tabular-nums}
 .calc{font-size:14px;color:var(--muted);font-weight:600}
 .ro{background:var(--surface)!important;color:var(--muted)}
+.calc.bad{color:var(--red)}
+.bad-in{border-color:var(--red)!important;outline:2px solid var(--red)}
 </style>
 </head>
 <body>
@@ -124,9 +126,8 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
         <label>En efectivo <div class="money"><input type="number" id="mEf" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
         <label>Por transferencia <div class="money"><input type="number" id="mTr" class="ro" readonly tabindex="-1" placeholder="0,00"></div></label>
       </div>
-      <span class="calc">Escribe lo que te dieron en efectivo; el resto se calcula como transferencia.</span>
+      <span class="calc" id="hMsg">Escribe lo que te dieron en efectivo; el resto se calcula como transferencia.</span>
     </div>
-    <label>¿A quién le vendiste? <small>Opcional</small><input id="comprador" placeholder="Nombre de la persona"></label>
     <label>Nota <small>Opcional · ej.: número de comprobante</small><textarea id="nota"></textarea></label>
     <p class="err" id="err" role="alert"></p>
     <button class="btn" id="send" type="submit">Registrar venta</button>
@@ -146,7 +147,8 @@ var PROD=[{k:'devo',n:'Devocional «La obra silenciosa»',c:'devocional',p:8},{k
 var KH='vtaHist', KN='vtaNombre';
 var $=function(id){return document.getElementById(id);};
 var hist=[], NOMBRE='';
-try{hist=JSON.parse(localStorage.getItem(KH)||'[]');}catch(e){hist=[];}
+var RESET=1794631200000; /* 13-nov-2026 23:40: se borraron las ventas de prueba */
+try{hist=JSON.parse(localStorage.getItem(KH)||'[]').filter(function(h){return h&&h.v&&h.v.at>=RESET;});}catch(e){hist=[];}
 try{NOMBRE=localStorage.getItem(KN)||'';}catch(e){}
 function save(){try{localStorage.setItem(KH,JSON.stringify(hist.slice(-200)));}catch(e){}}
 function hoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -163,7 +165,17 @@ var NOMBRES={efectivo:'Efectivo',transferencia:'Transferencia',hibrido:'Híbrido
 $('prods').innerHTML=PROD.map(function(p){return '<div class="prod"><span class="pn"><b>'+esc(p.n)+'</b><small>'+usd(p.p)+' c/u</small></span><span class="step"><button type="button" data-k="'+p.k+'" data-d="-1" aria-label="Quitar uno">−</button><input type="number" id="q-'+p.k+'" inputmode="numeric" min="0" step="1" value="0" aria-label="Cantidad de '+esc(p.n)+'"><button type="button" data-k="'+p.k+'" data-d="1" aria-label="Agregar uno">+</button></span></div>';}).join('');
 function qty(k){var n=parseInt($('q-'+k).value,10);return n>0?n:0;}
 function total(){return Math.round(PROD.reduce(function(a,p){return a+qty(p.k)*p.p;},0)*100)/100;}
-function recalc(){var t=total();$('tot').textContent=usd(t);var ef=num($('mEf').value);$('mTr').value=$('mEf').value===''?'':Math.max(0,Math.round((t-ef)*100)/100).toFixed(2);}
+function recalc(){var t=total();$('tot').textContent=usd(t);$('mEf').max=t;
+  var raw=$('mEf').value, ef=num(raw), hib=modo()==='hibrido', bad=false, msg='Escribe lo que te dieron en efectivo; el resto se calcula como transferencia.';
+  if(hib&&raw!==''){
+    if(!(t>0)){bad=true;msg='Primero marca qué vendiste.';}
+    else if(ef>=t){bad=true;msg='El efectivo no puede ser '+(ef>t?'mayor que':'igual a')+' el total ('+usd(t)+'). Si te pagaron todo en efectivo, elige «Efectivo».';}
+    else if(!(ef>0)){bad=true;msg='El efectivo debe ser mayor que $0. Si te pagaron todo por transferencia, elige «Transferencia».';}
+  }
+  $('mTr').value=(raw===''||bad)?'':(Math.round((t-ef)*100)/100).toFixed(2);
+  $('hMsg').textContent=msg; $('hMsg').classList.toggle('bad',bad); $('mEf').classList.toggle('bad-in',bad);
+  $('send').disabled=bad;
+}
 Array.prototype.forEach.call(document.querySelectorAll('.step button'),function(b){b.onclick=function(){var i=$('q-'+b.getAttribute('data-k'));i.value=Math.max(0,(parseInt(i.value,10)||0)+(+b.getAttribute('data-d')));recalc();};});
 PROD.forEach(function(p){$('q-'+p.k).oninput=recalc;});
 $('mEf').oninput=recalc;
@@ -175,7 +187,7 @@ function showWho(){
 }
 $('chgName').onclick=function(){$('nombre').value=NOMBRE;NOMBRE='';showWho();$('nombre').focus();};
 function modo(){return document.querySelector('input[name=pago]:checked').value;}
-function syncModo(){$('hib').classList.toggle('on',modo()==='hibrido');}
+function syncModo(){$('hib').classList.toggle('on',modo()==='hibrido');recalc();}
 Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
 
 function render(){
@@ -183,14 +195,14 @@ function render(){
   $('retry').hidden=!pend;
   if(!hist.length){$('mis').innerHTML='<li><p class="empty">Todavía no has registrado ventas desde este teléfono.</p></li>';return;}
   $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v;
-    return '<li><span class="l"><span>'+esc(resumen(v))+(v.comprador?' · '+esc(v.comprador):'')+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
+    return '<li><span class="l"><span>'+esc(resumen(v))+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
       '<span class="r">'+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
 }
 function enviar(h){
   var v=h.v;
   var det=v.pago==='hibrido'?('Efectivo '+usd(v.efectivo)+' + Transferencia '+usd(v.transferencia)):NOMBRES[v.pago];
   return fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,vendido:resumen(v),pago:det,total:usd(v.total),comprador:v.comprador||'',nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
+    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,vendido:resumen(v),pago:det,total:usd(v.total),nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
   .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.sent=true; save();});
 }
 function setMsg(t,ok){$('msg').innerHTML=t?'<div class="msg '+(ok?'ok':'bad')+'">'+esc(t)+'</div>':'';}
@@ -206,16 +218,16 @@ $('f').onsubmit=function(e){
     tr=Math.round((tot-ef)*100)/100;}
   else if(m==='efectivo') ef=tot; else tr=tot;
   NOMBRE=nombre; try{localStorage.setItem(KN,NOMBRE);}catch(x){}
-  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,pago:m,efectivo:ef,transferencia:tr,total:tot,comprador:$('comprador').value.trim(),nota:$('nota').value.trim(),at:Date.now()};
+  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,pago:m,efectivo:ef,transferencia:tr,total:tot,nota:$('nota').value.trim(),at:Date.now()};
   PROD.forEach(function(p){v[p.k]=qty(p.k);}); v.cant=v.devo;
   var h={v:v,sent:false}; hist.push(h); save();
   $('send').disabled=true; $('send').textContent='Enviando…';
   enviar(h).then(function(){
     setMsg('✓ Venta registrada: '+resumen(v)+' por '+usd(tot)+'. ¡Gracias, '+nombre+'!',true);
-    PROD.forEach(function(p){$('q-'+p.k).value=0;});$('mEf').value='';$('comprador').value='';$('nota').value='';recalc();
+    PROD.forEach(function(p){$('q-'+p.k).value=0;});$('mEf').value='';$('nota').value='';recalc();
   },function(){
     setMsg('No se pudo enviar (¿sin internet?). Quedó guardada en este teléfono: toca «Reenviar pendientes» cuando tengas señal.',false);
-  }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();render();});
+  }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();recalc();render();});
 };
 $('retry').onclick=function(){
   var p=hist.filter(function(h){return !h.sent;}); if(!p.length) return;
@@ -224,7 +236,7 @@ $('retry').onclick=function(){
   .then(function(){setMsg('✓ Se enviaron todos los registros pendientes.',true);},function(){setMsg('Algunos no se pudieron enviar. Inténtalo otra vez cuando tengas internet.',false);})
   .then(function(){$('retry').disabled=false;render();});
 };
-showWho(); syncModo(); recalc(); render();
+showWho(); syncModo(); render(); save();
 })();
 </script>
 </body>
