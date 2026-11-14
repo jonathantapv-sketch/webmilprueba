@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registro de ventas · La obra silenciosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#fff; --ink:#1f1b16; --muted:#6b6358; --line:#e4ddd2;
+  --accent:#2f5d50; --accent-soft:#e3eee9; --cash:#a86a00; --cash-soft:#fbf0d9;
+  --bank:#2f4fb3; --bank-soft:#e5eafb; --mix:#7a3f9a; --mix-soft:#f1e6f7;
+  --red:#c23a2b; --red-soft:#fae6e3;
+  --display:"Fraunces",Georgia,serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#14120f; --surface:#1e1b17; --ink:#f1ece4; --muted:#ada395; --line:#332e27;
+  --accent:#7cc2ad; --accent-soft:#1d3029; --cash:#f0bd5c; --cash-soft:#3a2c12;
+  --bank:#8fa6ff; --bank-soft:#1f2747; --mix:#d29df0; --mix-soft:#33213d;
+  --red:#ff8576; --red-soft:#3d1f1c; color-scheme:dark;}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+.wrap{max-width:560px;margin:0 auto;padding:24px 16px 80px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:6px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:800 clamp(28px,8vw,38px)/1.05 var(--display);margin:0}
+header p{margin:0;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 16px;display:flex;flex-direction:column;gap:16px}
+h2{font:700 20px/1.2 var(--display);margin:0}
+label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
+label small{font-weight:500;color:var(--muted)}
+input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+textarea{min-height:64px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.money{position:relative}
+.money::before{content:"$";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600}
+.money input{padding-left:26px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+legend{font-weight:600;font-size:15px;padding:0;margin-bottom:8px}
+.modos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.modo{position:relative}
+.modo input{position:absolute;opacity:0;pointer-events:none}
+.modo span{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid var(--line);border-radius:12px;padding:12px 4px;font-weight:700;font-size:14px;cursor:pointer;text-align:center;background:var(--surface)}
+.modo span i{font-style:normal;font-size:22px;line-height:1}
+.modo input:checked + span{border-color:var(--accent);background:var(--accent-soft)}
+.modo input:focus-visible + span{outline:3px solid var(--accent);outline-offset:2px}
+.hibrido{display:none;background:var(--mix-soft);border-radius:12px;padding:12px;gap:12px;flex-direction:column}
+.hibrido.on{display:flex}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-weight:600}
+.total b{font:800 22px var(--display);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+.btn{border:0;border-radius:12px;padding:14px;font-weight:700;font-size:17px;background:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){.btn{color:#10201b}}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:8px 12px;font-size:14px}
+.err{color:var(--red);font-weight:600;font-size:14px;margin:0;min-height:1em}
+.msg{border-radius:12px;padding:12px 14px;font-weight:600}
+.msg.ok{background:var(--accent-soft);color:var(--accent)}
+.msg.bad{background:var(--red-soft);color:var(--red)}
+.who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;color:var(--muted)}
+.who b{color:var(--ink)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;font-size:14px}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+li:last-child{border-bottom:0}
+li .l{display:flex;flex-direction:column}
+li .l small{color:var(--muted)}
+li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px}
+.tag.efectivo{background:var(--cash-soft);color:var(--cash)}
+.tag.transferencia{background:var(--bank-soft);color:var(--bank)}
+.tag.hibrido{background:var(--mix-soft);color:var(--mix)}
+.tag.pend{background:var(--red-soft);color:var(--red)}
+.tag.okk{background:var(--accent-soft);color:var(--accent)}
+.empty{color:var(--muted);font-size:15px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">Devocionales · Venta</span>
+    <h1>La obra silenciosa</h1>
+    <p>Registra aquí cada venta que hagas. Toma menos de un minuto.</p>
+  </header>
+
+  <form class="card" id="f" novalidate>
+    <h2>Nueva venta</h2>
+    <div class="who" id="who" hidden><span>Vendedor: <b id="whoName"></b></span><button type="button" class="linkbtn" id="chgName">Cambiar</button></div>
+    <label id="nameWrap">Tu nombre <input id="nombre" autocomplete="name" placeholder="Ej.: Marce"></label>
+    <div class="row">
+      <label>Fecha <input type="date" id="fecha"></label>
+      <label>Cantidad vendida <input type="number" id="cant" inputmode="numeric" min="1" step="1" placeholder="0"></label>
+    </div>
+    <fieldset>
+      <legend>¿Cómo te pagaron?</legend>
+      <div class="modos">
+        <label class="modo"><input type="radio" name="pago" value="efectivo" checked><span><i>💵</i>Efectivo</span></label>
+        <label class="modo"><input type="radio" name="pago" value="transferencia"><span><i>🏦</i>Transferencia</span></label>
+        <label class="modo"><input type="radio" name="pago" value="hibrido"><span><i>🔀</i>Híbrido</span></label>
+      </div>
+    </fieldset>
+    <label id="totWrap">Monto recibido <div class="money"><input type="number" id="monto" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
+    <div class="hibrido" id="hib">
+      <div class="row">
+        <label>En efectivo <div class="money"><input type="number" id="mEf" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
+        <label>Por transferencia <div class="money"><input type="number" id="mTr" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
+      </div>
+      <div class="total"><span>Total recibido</span><b id="hTot">$0,00</b></div>
+    </div>
+    <label>¿A quién le vendiste? <small>Opcional</small><input id="comprador" placeholder="Nombre de la persona"></label>
+    <label>Nota <small>Opcional · ej.: número de comprobante</small><textarea id="nota"></textarea></label>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn" id="send" type="submit">Registrar venta</button>
+    <div id="msg" role="status"></div>
+  </form>
+
+  <section class="card" aria-labelledby="h-mis">
+    <div class="total"><h2 id="h-mis">Mis registros</h2><button type="button" class="btn ghost" id="retry" hidden>Reenviar pendientes</button></div>
+    <ul id="mis"></ul>
+  </section>
+</div>
+
+<script>
+(function(){
+var FORM='https://formspree.io/f/xjywbvgb';
+var KH='vtaHist', KN='vtaNombre';
+var $=function(id){return document.getElementById(id);};
+var hist=[], NOMBRE='';
+try{hist=JSON.parse(localStorage.getItem(KH)||'[]');}catch(e){hist=[];}
+try{NOMBRE=localStorage.getItem(KN)||'';}catch(e){}
+function save(){try{localStorage.setItem(KH,JSON.stringify(hist.slice(-200)));}catch(e){}}
+function hoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function usd(n){return '$'+(Math.round((+n||0)*100)/100).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function num(v){v=String(v||'').replace(',','.');var n=parseFloat(v);return isNaN(n)?0:Math.round(n*100)/100;}
+function fmtF(f){var d=new Date(f+'T12:00:00');return isNaN(d)?f:d.toLocaleDateString('es-EC',{weekday:'short',day:'numeric',month:'short'});}
+function uid(){return 'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function b64e(s){return btoa(unescape(encodeURIComponent(s)));}
+var NOMBRES={efectivo:'Efectivo',transferencia:'Transferencia',hibrido:'Híbrido'};
+
+$('fecha').value=hoy(); $('fecha').max=hoy();
+function showWho(){
+  if(NOMBRE){$('who').hidden=false;$('whoName').textContent=NOMBRE;$('nameWrap').hidden=true;}
+  else{$('who').hidden=true;$('nameWrap').hidden=false;}
+}
+$('chgName').onclick=function(){$('nombre').value=NOMBRE;NOMBRE='';showWho();$('nombre').focus();};
+function modo(){return document.querySelector('input[name=pago]:checked').value;}
+function syncModo(){var h=modo()==='hibrido';$('hib').classList.toggle('on',h);$('totWrap').hidden=h;}
+Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
+$('mEf').oninput=$('mTr').oninput=function(){$('hTot').textContent=usd(num($('mEf').value)+num($('mTr').value));};
+
+function render(){
+  var pend=hist.filter(function(h){return !h.sent;}).length;
+  $('retry').hidden=!pend;
+  if(!hist.length){$('mis').innerHTML='<li><p class="empty">Todavía no has registrado ventas desde este teléfono.</p></li>';return;}
+  $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v;
+    return '<li><span class="l"><span><b>'+v.cant+'</b> '+(v.cant==1?'devocional':'devocionales')+(v.comprador?' · '+esc(v.comprador):'')+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
+      '<span class="r">'+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
+}
+function enviar(h){
+  var v=h.v;
+  var det=v.pago==='hibrido'?('Efectivo '+usd(v.efectivo)+' + Transferencia '+usd(v.transferencia)):NOMBRES[v.pago];
+  return fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+v.cant+' u. · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,cantidad:v.cant,pago:det,total:usd(v.total),comprador:v.comprador||'',nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
+  .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.sent=true; save();});
+}
+function setMsg(t,ok){$('msg').innerHTML=t?'<div class="msg '+(ok?'ok':'bad')+'">'+esc(t)+'</div>':'';}
+
+$('f').onsubmit=function(e){
+  e.preventDefault(); $('err').textContent=''; setMsg('');
+  var nombre=NOMBRE||$('nombre').value.trim();
+  var cant=parseInt($('cant').value,10), m=modo(), ef=0, tr=0, tot=0;
+  if(!nombre){$('err').textContent='Escribe tu nombre.';$('nombre').focus();return;}
+  if(!$('fecha').value){$('err').textContent='Elige la fecha de la venta.';return;}
+  if(!(cant>=1)){$('err').textContent='Escribe cuántos devocionales vendiste.';$('cant').focus();return;}
+  if(m==='hibrido'){ef=num($('mEf').value);tr=num($('mTr').value);
+    if(!(ef>0&&tr>0)){$('err').textContent='En híbrido, escribe cuánto fue en efectivo y cuánto por transferencia.';return;}
+    tot=Math.round((ef+tr)*100)/100;}
+  else{tot=num($('monto').value);if(!(tot>0)){$('err').textContent='Escribe el monto que recibiste.';$('monto').focus();return;}
+    if(m==='efectivo')ef=tot;else tr=tot;}
+  NOMBRE=nombre; try{localStorage.setItem(KN,NOMBRE);}catch(x){}
+  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,cant:cant,pago:m,efectivo:ef,transferencia:tr,total:tot,comprador:$('comprador').value.trim(),nota:$('nota').value.trim(),at:Date.now()};
+  var h={v:v,sent:false}; hist.push(h); save();
+  $('send').disabled=true; $('send').textContent='Enviando…';
+  enviar(h).then(function(){
+    setMsg('✓ Venta registrada: '+cant+' '+(cant==1?'devocional':'devocionales')+' por '+usd(tot)+'. ¡Gracias, '+nombre+'!',true);
+    $('cant').value='';$('monto').value='';$('mEf').value='';$('mTr').value='';$('hTot').textContent='$0,00';$('comprador').value='';$('nota').value='';
+  },function(){
+    setMsg('No se pudo enviar (¿sin internet?). Quedó guardada en este teléfono: toca «Reenviar pendientes» cuando tengas señal.',false);
+  }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();render();});
+};
+$('retry').onclick=function(){
+  var p=hist.filter(function(h){return !h.sent;}); if(!p.length) return;
+  $('retry').disabled=true;
+  p.reduce(function(acc,h){return acc.then(function(){return enviar(h);});},Promise.resolve())
+  .then(function(){setMsg('✓ Se enviaron todos los registros pendientes.',true);},function(){setMsg('Algunos no se pudieron enviar. Inténtalo otra vez cuando tengas internet.',false);})
+  .then(function(){$('retry').disabled=false;render();});
+};
+showWho(); syncModo(); render();
+})();
+</script>
+</body>
+</html>
