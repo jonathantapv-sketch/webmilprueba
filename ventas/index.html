@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Registro de ventas · La obra silenciosa</title>
+<title>Registro de ventas · Devocional y libro de discipulado</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -78,13 +78,26 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
 .tag.pend{background:var(--red-soft);color:var(--red)}
 .tag.okk{background:var(--accent-soft);color:var(--accent)}
 .empty{color:var(--muted);font-size:15px;margin:0}
+.prods{display:flex;flex-direction:column;gap:10px}
+.prod{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.prod .pn{display:flex;flex-direction:column;line-height:1.3}
+.prod .pn b{font-size:16px}
+.prod .pn small{color:var(--muted);font-weight:600}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:22px;font-weight:700;line-height:1;color:var(--accent)}
+.step input{width:56px;text-align:center;font-weight:800;font-size:18px;padding:8px 4px;-moz-appearance:textfield}
+.step input::-webkit-inner-spin-button{-webkit-appearance:none}
+.totbox{display:flex;justify-content:space-between;align-items:baseline;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:12px 14px;font-weight:700}
+.totbox b{font:800 28px var(--display);font-variant-numeric:tabular-nums}
+.calc{font-size:14px;color:var(--muted);font-weight:600}
+.ro{background:var(--surface)!important;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="kicker">Devocionales · Venta</span>
-    <h1>La obra silenciosa</h1>
+    <span class="kicker">Registro de ventas</span>
+    <h1>Devocional y libro de discipulado</h1>
     <p>Registra aquí cada venta que hagas. Toma menos de un minuto.</p>
   </header>
 
@@ -92,10 +105,12 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
     <h2>Nueva venta</h2>
     <div class="who" id="who" hidden><span>Vendedor: <b id="whoName"></b></span><button type="button" class="linkbtn" id="chgName">Cambiar</button></div>
     <label id="nameWrap">Tu nombre <input id="nombre" autocomplete="name" placeholder="Ej.: Marce"></label>
-    <div class="row">
-      <label>Fecha <input type="date" id="fecha"></label>
-      <label>Cantidad vendida <input type="number" id="cant" inputmode="numeric" min="1" step="1" placeholder="0"></label>
-    </div>
+    <label>Fecha <input type="date" id="fecha"></label>
+    <fieldset>
+      <legend>¿Qué vendiste?</legend>
+      <div class="prods" id="prods"></div>
+    </fieldset>
+    <div class="totbox"><span>Total a cobrar</span><b id="tot">$0,00</b></div>
     <fieldset>
       <legend>¿Cómo te pagaron?</legend>
       <div class="modos">
@@ -104,13 +119,12 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
         <label class="modo"><input type="radio" name="pago" value="hibrido"><span><i>🔀</i>Híbrido</span></label>
       </div>
     </fieldset>
-    <label id="totWrap">Monto recibido <div class="money"><input type="number" id="monto" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
     <div class="hibrido" id="hib">
       <div class="row">
         <label>En efectivo <div class="money"><input type="number" id="mEf" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
-        <label>Por transferencia <div class="money"><input type="number" id="mTr" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></label>
+        <label>Por transferencia <div class="money"><input type="number" id="mTr" class="ro" readonly tabindex="-1" placeholder="0,00"></div></label>
       </div>
-      <div class="total"><span>Total recibido</span><b id="hTot">$0,00</b></div>
+      <span class="calc">Escribe lo que te dieron en efectivo; el resto se calcula como transferencia.</span>
     </div>
     <label>¿A quién le vendiste? <small>Opcional</small><input id="comprador" placeholder="Nombre de la persona"></label>
     <label>Nota <small>Opcional · ej.: número de comprobante</small><textarea id="nota"></textarea></label>
@@ -128,6 +142,7 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
 <script>
 (function(){
 var FORM='https://formspree.io/f/xjywbvgb';
+var PROD=[{k:'devo',n:'Devocional «La obra silenciosa»',c:'devocional',p:8},{k:'libro',n:'Libro de discipulado',c:'libro',p:5}];
 var KH='vtaHist', KN='vtaNombre';
 var $=function(id){return document.getElementById(id);};
 var hist=[], NOMBRE='';
@@ -141,7 +156,17 @@ function num(v){v=String(v||'').replace(',','.');var n=parseFloat(v);return isNa
 function fmtF(f){var d=new Date(f+'T12:00:00');return isNaN(d)?f:d.toLocaleDateString('es-EC',{weekday:'short',day:'numeric',month:'short'});}
 function uid(){return 'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function b64e(s){return btoa(unescape(encodeURIComponent(s)));}
+function pl(n,w){return n+' '+(n==1?w:(/[aeiou]$/.test(w)?w+'s':w+'es'));}
+function resumen(v){var out=[];PROD.forEach(function(p){if(v[p.k])out.push(pl(v[p.k],p.c));});return out.join(' + ')||pl(v.cant||0,'devocional');}
 var NOMBRES={efectivo:'Efectivo',transferencia:'Transferencia',hibrido:'Híbrido'};
+
+$('prods').innerHTML=PROD.map(function(p){return '<div class="prod"><span class="pn"><b>'+esc(p.n)+'</b><small>'+usd(p.p)+' c/u</small></span><span class="step"><button type="button" data-k="'+p.k+'" data-d="-1" aria-label="Quitar uno">−</button><input type="number" id="q-'+p.k+'" inputmode="numeric" min="0" step="1" value="0" aria-label="Cantidad de '+esc(p.n)+'"><button type="button" data-k="'+p.k+'" data-d="1" aria-label="Agregar uno">+</button></span></div>';}).join('');
+function qty(k){var n=parseInt($('q-'+k).value,10);return n>0?n:0;}
+function total(){return Math.round(PROD.reduce(function(a,p){return a+qty(p.k)*p.p;},0)*100)/100;}
+function recalc(){var t=total();$('tot').textContent=usd(t);var ef=num($('mEf').value);$('mTr').value=$('mEf').value===''?'':Math.max(0,Math.round((t-ef)*100)/100).toFixed(2);}
+Array.prototype.forEach.call(document.querySelectorAll('.step button'),function(b){b.onclick=function(){var i=$('q-'+b.getAttribute('data-k'));i.value=Math.max(0,(parseInt(i.value,10)||0)+(+b.getAttribute('data-d')));recalc();};});
+PROD.forEach(function(p){$('q-'+p.k).oninput=recalc;});
+$('mEf').oninput=recalc;
 
 $('fecha').value=hoy(); $('fecha').max=hoy();
 function showWho(){
@@ -150,46 +175,44 @@ function showWho(){
 }
 $('chgName').onclick=function(){$('nombre').value=NOMBRE;NOMBRE='';showWho();$('nombre').focus();};
 function modo(){return document.querySelector('input[name=pago]:checked').value;}
-function syncModo(){var h=modo()==='hibrido';$('hib').classList.toggle('on',h);$('totWrap').hidden=h;}
+function syncModo(){$('hib').classList.toggle('on',modo()==='hibrido');}
 Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
-$('mEf').oninput=$('mTr').oninput=function(){$('hTot').textContent=usd(num($('mEf').value)+num($('mTr').value));};
 
 function render(){
   var pend=hist.filter(function(h){return !h.sent;}).length;
   $('retry').hidden=!pend;
   if(!hist.length){$('mis').innerHTML='<li><p class="empty">Todavía no has registrado ventas desde este teléfono.</p></li>';return;}
   $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v;
-    return '<li><span class="l"><span><b>'+v.cant+'</b> '+(v.cant==1?'devocional':'devocionales')+(v.comprador?' · '+esc(v.comprador):'')+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
+    return '<li><span class="l"><span>'+esc(resumen(v))+(v.comprador?' · '+esc(v.comprador):'')+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
       '<span class="r">'+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
 }
 function enviar(h){
   var v=h.v;
   var det=v.pago==='hibrido'?('Efectivo '+usd(v.efectivo)+' + Transferencia '+usd(v.transferencia)):NOMBRES[v.pago];
   return fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+v.cant+' u. · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,cantidad:v.cant,pago:det,total:usd(v.total),comprador:v.comprador||'',nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
+    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,vendido:resumen(v),pago:det,total:usd(v.total),comprador:v.comprador||'',nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
   .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.sent=true; save();});
 }
 function setMsg(t,ok){$('msg').innerHTML=t?'<div class="msg '+(ok?'ok':'bad')+'">'+esc(t)+'</div>':'';}
 
 $('f').onsubmit=function(e){
   e.preventDefault(); $('err').textContent=''; setMsg('');
-  var nombre=NOMBRE||$('nombre').value.trim();
-  var cant=parseInt($('cant').value,10), m=modo(), ef=0, tr=0, tot=0;
+  var nombre=NOMBRE||$('nombre').value.trim(), m=modo(), tot=total(), ef=0, tr=0;
   if(!nombre){$('err').textContent='Escribe tu nombre.';$('nombre').focus();return;}
   if(!$('fecha').value){$('err').textContent='Elige la fecha de la venta.';return;}
-  if(!(cant>=1)){$('err').textContent='Escribe cuántos devocionales vendiste.';$('cant').focus();return;}
-  if(m==='hibrido'){ef=num($('mEf').value);tr=num($('mTr').value);
-    if(!(ef>0&&tr>0)){$('err').textContent='En híbrido, escribe cuánto fue en efectivo y cuánto por transferencia.';return;}
-    tot=Math.round((ef+tr)*100)/100;}
-  else{tot=num($('monto').value);if(!(tot>0)){$('err').textContent='Escribe el monto que recibiste.';$('monto').focus();return;}
-    if(m==='efectivo')ef=tot;else tr=tot;}
+  if(!(tot>0)){$('err').textContent='Marca cuántos devocionales o libros vendiste.';return;}
+  if(m==='hibrido'){ef=num($('mEf').value);
+    if(!(ef>0&&ef<tot)){$('err').textContent='En híbrido, escribe cuánto te dieron en efectivo (menos de '+usd(tot)+').';$('mEf').focus();return;}
+    tr=Math.round((tot-ef)*100)/100;}
+  else if(m==='efectivo') ef=tot; else tr=tot;
   NOMBRE=nombre; try{localStorage.setItem(KN,NOMBRE);}catch(x){}
-  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,cant:cant,pago:m,efectivo:ef,transferencia:tr,total:tot,comprador:$('comprador').value.trim(),nota:$('nota').value.trim(),at:Date.now()};
+  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,pago:m,efectivo:ef,transferencia:tr,total:tot,comprador:$('comprador').value.trim(),nota:$('nota').value.trim(),at:Date.now()};
+  PROD.forEach(function(p){v[p.k]=qty(p.k);}); v.cant=v.devo;
   var h={v:v,sent:false}; hist.push(h); save();
   $('send').disabled=true; $('send').textContent='Enviando…';
   enviar(h).then(function(){
-    setMsg('✓ Venta registrada: '+cant+' '+(cant==1?'devocional':'devocionales')+' por '+usd(tot)+'. ¡Gracias, '+nombre+'!',true);
-    $('cant').value='';$('monto').value='';$('mEf').value='';$('mTr').value='';$('hTot').textContent='$0,00';$('comprador').value='';$('nota').value='';
+    setMsg('✓ Venta registrada: '+resumen(v)+' por '+usd(tot)+'. ¡Gracias, '+nombre+'!',true);
+    PROD.forEach(function(p){$('q-'+p.k).value=0;});$('mEf').value='';$('comprador').value='';$('nota').value='';recalc();
   },function(){
     setMsg('No se pudo enviar (¿sin internet?). Quedó guardada en este teléfono: toca «Reenviar pendientes» cuando tengas señal.',false);
   }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();render();});
@@ -201,7 +224,7 @@ $('retry').onclick=function(){
   .then(function(){setMsg('✓ Se enviaron todos los registros pendientes.',true);},function(){setMsg('Algunos no se pudieron enviar. Inténtalo otra vez cuando tengas internet.',false);})
   .then(function(){$('retry').disabled=false;render();});
 };
-showWho(); syncModo(); render();
+showWho(); syncModo(); recalc(); render();
 })();
 </script>
 </body>
