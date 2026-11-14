@@ -213,15 +213,23 @@ function syncModo(){var m=modo();$('hib').classList.toggle('on',m==='hibrido');$
 var FOTO='';
 function setFoto(d){FOTO=d||'';$('prev').hidden=!FOTO;$('fotoBtn').hidden=!!FOTO;if(FOTO)$('prevImg').src=FOTO;$('fotoCam').value='';$('fotoGal').value='';}
 $('fotoDel').onclick=function(){setFoto('');$('fotoMsg').textContent='';};
+function fotoError(){$('fotoMsg').textContent='No se pudo procesar la foto en este celular. Cierra otras apps e inténtalo otra vez, o toma la foto con la cámara normal y luego usa «Elegir de la galería».';}
+function dibujar(src,w,h){var M=1280,k=Math.min(1,M/Math.max(w,h));
+  var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
+  var q=0.6,d=c.toDataURL('image/jpeg',q);while(d.length>170000&&q>0.3){q-=0.1;d=c.toDataURL('image/jpeg',q);}
+  c.width=c.height=0; if(src.close)src.close(); return d;}
 $('fotoCam').onchange=$('fotoGal').onchange=function(){var f=this.files&&this.files[0];if(!f)return;$('fotoMsg').textContent='Preparando foto…';
-  var url=URL.createObjectURL(f),img=new Image();
-  img.onload=function(){var M=1280,w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,M/Math.max(w,h));
-    var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
-    var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
-    var q=0.6,d=c.toDataURL('image/jpeg',q);while(d.length>170000&&q>0.3){q-=0.1;d=c.toDataURL('image/jpeg',q);}
-    setFoto(d);$('fotoMsg').textContent='';};
-  img.onerror=function(){URL.revokeObjectURL(url);$('fotoMsg').textContent='No se pudo leer esa imagen. Prueba con otra foto.';};
-  img.src=url;};
+  var viaImg=function(){var url=URL.createObjectURL(f),img=new Image();
+    img.onload=function(){try{var d=dibujar(img,img.naturalWidth,img.naturalHeight);URL.revokeObjectURL(url);setFoto(d);$('fotoMsg').textContent='';}catch(e){URL.revokeObjectURL(url);fotoError();}};
+    img.onerror=function(){URL.revokeObjectURL(url);$('fotoMsg').textContent='No se pudo leer esa imagen. Prueba con otra foto.';};
+    img.src=url;};
+  /* Decodifica la foto ya reducida (gasta mucha menos memoria en celulares sencillos) */
+  if(window.createImageBitmap){
+    createImageBitmap(f,{resizeWidth:1000,resizeQuality:'medium',imageOrientation:'from-image'})
+    .then(function(bm){try{setFoto(dibujar(bm,bm.width,bm.height));$('fotoMsg').textContent='';}catch(e){fotoError();}},viaImg);
+  } else viaImg();
+};
 Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
 
 function render(){
