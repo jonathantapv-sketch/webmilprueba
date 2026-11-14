@@ -92,6 +92,13 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
 .calc{font-size:14px;color:var(--muted);font-weight:600}
 .ro{background:var(--surface)!important;color:var(--muted)}
 .calc.bad{color:var(--red)}
+.foto{display:flex;flex-direction:column;gap:8px}
+.flabel{font-weight:600;font-size:15px;display:flex;flex-direction:column}
+.flabel small{font-weight:500;color:var(--muted)}
+.fbtn{position:relative;flex-direction:row;justify-content:center;border:2px dashed var(--accent);border-radius:12px;padding:14px;color:var(--accent);font-weight:700;cursor:pointer;background:var(--accent-soft)}
+.fbtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.prev{display:flex;align-items:center;gap:12px}
+.prev img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .bad-in{border-color:var(--red)!important;outline:2px solid var(--red)}
 </style>
 </head>
@@ -128,7 +135,12 @@ li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-s
       </div>
       <span class="calc" id="hMsg">Escribe lo que te dieron en efectivo; el resto se calcula como transferencia.</span>
     </div>
-    <label>Nota <small>Opcional · ej.: número de comprobante</small><textarea id="nota"></textarea></label>
+    <div class="foto" id="fotoWrap" hidden>
+      <span class="flabel">Foto del comprobante <small>Opcional, pero ayuda mucho</small></span>
+      <label class="fbtn" id="fotoBtn"><input type="file" id="foto" accept="image/*"><span>📷 Tomar o elegir foto</span></label>
+      <div class="prev" id="prev" hidden><img id="prevImg" alt="Foto del comprobante"><button type="button" class="linkbtn" id="fotoDel">Quitar foto</button></div>
+      <span class="calc" id="fotoMsg"></span>
+    </div>
     <p class="err" id="err" role="alert"></p>
     <button class="btn" id="send" type="submit">Registrar venta</button>
     <div id="msg" role="status"></div>
@@ -150,7 +162,7 @@ var hist=[], NOMBRE='';
 var RESET=1794631200000; /* 13-nov-2026 23:40: se borraron las ventas de prueba */
 try{hist=JSON.parse(localStorage.getItem(KH)||'[]').filter(function(h){return h&&h.v&&h.v.at>=RESET;});}catch(e){hist=[];}
 try{NOMBRE=localStorage.getItem(KN)||'';}catch(e){}
-function save(){try{localStorage.setItem(KH,JSON.stringify(hist.slice(-200)));}catch(e){}}
+function save(){var h=hist.slice(-200);try{localStorage.setItem(KH,JSON.stringify(h));}catch(e){try{localStorage.setItem(KH,JSON.stringify(h.map(function(x){var y={v:x.v,sent:x.sent};return y;})));}catch(e2){}}}
 function hoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function usd(n){return '$'+(Math.round((+n||0)*100)/100).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -187,7 +199,19 @@ function showWho(){
 }
 $('chgName').onclick=function(){$('nombre').value=NOMBRE;NOMBRE='';showWho();$('nombre').focus();};
 function modo(){return document.querySelector('input[name=pago]:checked').value;}
-function syncModo(){$('hib').classList.toggle('on',modo()==='hibrido');recalc();}
+function syncModo(){var m=modo();$('hib').classList.toggle('on',m==='hibrido');$('fotoWrap').hidden=m==='efectivo';recalc();}
+var FOTO='';
+function setFoto(d){FOTO=d||'';$('prev').hidden=!FOTO;$('fotoBtn').hidden=!!FOTO;if(FOTO)$('prevImg').src=FOTO;$('foto').value='';}
+$('fotoDel').onclick=function(){setFoto('');$('fotoMsg').textContent='';};
+$('foto').onchange=function(){var f=this.files&&this.files[0];if(!f)return;$('fotoMsg').textContent='Preparando foto…';
+  var url=URL.createObjectURL(f),img=new Image();
+  img.onload=function(){var M=1280,w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,M/Math.max(w,h));
+    var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+    var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+    var q=0.6,d=c.toDataURL('image/jpeg',q);while(d.length>170000&&q>0.3){q-=0.1;d=c.toDataURL('image/jpeg',q);}
+    setFoto(d);$('fotoMsg').textContent='';};
+  img.onerror=function(){URL.revokeObjectURL(url);$('fotoMsg').textContent='No se pudo leer esa imagen. Prueba con otra foto.';};
+  img.src=url;};
 Array.prototype.forEach.call(document.querySelectorAll('input[name=pago]'),function(r){r.onchange=syncModo;});
 
 function render(){
@@ -196,14 +220,14 @@ function render(){
   if(!hist.length){$('mis').innerHTML='<li><p class="empty">Todavía no has registrado ventas desde este teléfono.</p></li>';return;}
   $('mis').innerHTML=hist.slice().reverse().slice(0,30).map(function(h){var v=h.v;
     return '<li><span class="l"><span>'+esc(resumen(v))+'</span><small>'+esc(fmtF(v.fecha))+' · <span class="tag '+v.pago+'">'+NOMBRES[v.pago]+'</span></small></span>'+
-      '<span class="r">'+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
+      '<span class="r">'+(v.foto?'📎 ':'')+usd(v.total)+'<br><span class="tag '+(h.sent?'okk':'pend')+'">'+(h.sent?'Enviado':'Sin enviar')+'</span></span></li>';}).join('');
 }
 function enviar(h){
   var v=h.v;
   var det=v.pago==='hibrido'?('Efectivo '+usd(v.efectivo)+' + Transferencia '+usd(v.transferencia)):NOMBRES[v.pago];
   return fetch(FORM,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,vendido:resumen(v),pago:det,total:usd(v.total),nota:v.nota||'',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE'})})
-  .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.sent=true; save();});
+    body:JSON.stringify({_subject:'Venta devocionales · '+v.vendedor+' · '+resumen(v)+' · '+v.fecha,vendedor:v.vendedor,fecha:v.fecha,vendido:resumen(v),pago:det,total:usd(v.total),comprobante:h.foto?'Sí (se ve en el sitio de control)':'No',codigo:'VENTACODE{'+b64e(JSON.stringify(v))+'}VENTACODE',foto:h.foto?'FOTOCODE{'+v.id+'|'+h.foto.split(',')[1]+'}FOTOCODE':''})})
+  .then(function(r){if(!r.ok) throw new Error('http '+r.status); h.sent=true; delete h.foto; save();});
 }
 function setMsg(t,ok){$('msg').innerHTML=t?'<div class="msg '+(ok?'ok':'bad')+'">'+esc(t)+'</div>':'';}
 
@@ -218,13 +242,13 @@ $('f').onsubmit=function(e){
     tr=Math.round((tot-ef)*100)/100;}
   else if(m==='efectivo') ef=tot; else tr=tot;
   NOMBRE=nombre; try{localStorage.setItem(KN,NOMBRE);}catch(x){}
-  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,pago:m,efectivo:ef,transferencia:tr,total:tot,nota:$('nota').value.trim(),at:Date.now()};
+  var v={id:uid(),vendedor:nombre,fecha:$('fecha').value,pago:m,efectivo:ef,transferencia:tr,total:tot,at:Date.now()};
   PROD.forEach(function(p){v[p.k]=qty(p.k);}); v.cant=v.devo;
-  var h={v:v,sent:false}; hist.push(h); save();
+  var h={v:v,sent:false}; if(FOTO&&m!=='efectivo'){h.foto=FOTO;v.foto=1;} hist.push(h); save();
   $('send').disabled=true; $('send').textContent='Enviando…';
   enviar(h).then(function(){
     setMsg('✓ Venta registrada: '+resumen(v)+' por '+usd(tot)+'. ¡Gracias, '+nombre+'!',true);
-    PROD.forEach(function(p){$('q-'+p.k).value=0;});$('mEf').value='';$('nota').value='';recalc();
+    PROD.forEach(function(p){$('q-'+p.k).value=0;});$('mEf').value='';setFoto('');recalc();
   },function(){
     setMsg('No se pudo enviar (¿sin internet?). Quedó guardada en este teléfono: toca «Reenviar pendientes» cuando tengas señal.',false);
   }).then(function(){$('send').disabled=false;$('send').textContent='Registrar venta';showWho();recalc();render();});
