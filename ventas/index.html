@@ -105,6 +105,8 @@ li{flex-wrap:wrap}
 .flabel small{font-weight:500;color:var(--muted)}
 .fbtn{position:relative;flex-direction:row;justify-content:center;border:2px dashed var(--accent);border-radius:12px;padding:14px;color:var(--accent);font-weight:700;cursor:pointer;background:var(--accent-soft)}
 .fbtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.fbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fbtns .fbtn{font-size:14px;text-align:center;padding:14px 8px}
 .prev{display:flex;align-items:center;gap:12px}
 .prev img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .bad-in{border-color:var(--red)!important;outline:2px solid var(--red)}
@@ -145,7 +147,7 @@ li{flex-wrap:wrap}
     </div>
     <div class="foto" id="fotoWrap" hidden>
       <span class="flabel">Foto del comprobante <small>Opcional, pero ayuda mucho</small></span>
-      <label class="fbtn" id="fotoBtn"><input type="file" id="foto" accept="image/*"><span>📷 Tomar o elegir foto</span></label>
+      <div class="fbtns" id="fotoBtn"><label class="fbtn"><input type="file" id="fotoCam" accept="image/*" capture="environment"><span>📷 Tomar foto</span></label><label class="fbtn"><input type="file" id="fotoGal" accept="image/*"><span>🖼️ Elegir de la galería</span></label></div>
       <div class="prev" id="prev" hidden><img id="prevImg" alt="Foto del comprobante"><button type="button" class="linkbtn" id="fotoDel">Quitar foto</button></div>
       <span class="calc" id="fotoMsg"></span>
     </div>
@@ -209,9 +211,9 @@ $('chgName').onclick=function(){$('nombre').value=NOMBRE;NOMBRE='';showWho();$('
 function modo(){return document.querySelector('input[name=pago]:checked').value;}
 function syncModo(){var m=modo();$('hib').classList.toggle('on',m==='hibrido');$('fotoWrap').hidden=m==='efectivo';recalc();}
 var FOTO='';
-function setFoto(d){FOTO=d||'';$('prev').hidden=!FOTO;$('fotoBtn').hidden=!!FOTO;if(FOTO)$('prevImg').src=FOTO;$('foto').value='';}
+function setFoto(d){FOTO=d||'';$('prev').hidden=!FOTO;$('fotoBtn').hidden=!!FOTO;if(FOTO)$('prevImg').src=FOTO;$('fotoCam').value='';$('fotoGal').value='';}
 $('fotoDel').onclick=function(){setFoto('');$('fotoMsg').textContent='';};
-$('foto').onchange=function(){var f=this.files&&this.files[0];if(!f)return;$('fotoMsg').textContent='Preparando foto…';
+$('fotoCam').onchange=$('fotoGal').onchange=function(){var f=this.files&&this.files[0];if(!f)return;$('fotoMsg').textContent='Preparando foto…';
   var url=URL.createObjectURL(f),img=new Image();
   img.onload=function(){var M=1280,w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,M/Math.max(w,h));
     var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
